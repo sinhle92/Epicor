@@ -1,0 +1,2925 @@
+// **************************************************
+// Custom code for ServiceCallCenterEntryForm
+// Created: 16/07/21 6:34:32 PM
+// **************************************************
+
+extern alias Erp_Contracts_BO_ServiceCallCenter;
+extern alias Erp_Contracts_BO_FSTechSearch;
+extern alias Erp_Contracts_BO_Customer;
+extern alias Erp_Contracts_BO_EmpBasic;
+extern alias Erp_Contracts_BO_Part;
+extern alias Erp_Contracts_BO_ServiceContract;
+extern alias Erp_Contracts_BO_SerialNo;
+extern alias Ice_Contracts_BO_UD109;
+extern alias Ice_Adapters_UD109;
+extern alias Ice_Contracts_BO_DynamicQuery;
+extern alias Ice_Adapters_UD04;
+extern alias Ice_Contracts_BO_UD04;
+
+using System;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Windows.Forms;
+using Erp.Adapters;
+using Erp.UI;
+using Ice.Lib;
+using Ice.Adapters;
+using Ice.Lib.Customization;
+using Ice.Lib.ExtendedProps;
+using Ice.Lib.Framework;
+using Ice.Lib.Searches;
+using Ice.UI.FormFunctions;
+using Infragistics.Win.UltraWinGrid;
+using Erp.Adapters;
+
+public class Script
+{
+	// ** Wizard Insert Location - Do Not Remove 'Begin/End Wizard Added Module Level Variables' Comments! **
+	// Begin Wizard Added Module Level Variables **
+	private DataTable tblLine;
+	// End Wizard Added Module Level Variables **
+
+	// Add Custom Module Level Variables Here **
+
+	public void InitializeCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Variable Initialization' lines **
+		// Begin Wizard Added Variable Initialization
+
+		// End Wizard Added Variable Initialization
+
+		// Begin Wizard Added Custom Method Calls
+
+		this.epiButtonC1.Click += new System.EventHandler(this.epiButtonC1_Click);
+		this.epiButtonC2.Click += new System.EventHandler(this.epiButtonC2_Click);
+		this.epiButtonC3.Click += new System.EventHandler(this.epiButtonC3_Click);
+		this.epiUltraGridC1.InitializeLayout += new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.epiUltraGridC1_InitializeLayout);
+		this.epiTextBoxC1.TextChanged += new System.EventHandler(this.epiTextBoxC1_TextChanged);
+		this.epiUltraGridC1.AfterCellUpdate += new Infragistics.Win.UltraWinGrid.CellEventHandler(this.epiUltraGridC1_AfterCellUpdate);
+		// End Wizard Added Custom Method Calls
+	}
+
+	public void DestroyCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Object Disposal' lines **
+		// Begin Wizard Added Object Disposal
+
+		this.epiButtonC1.Click -= new System.EventHandler(this.epiButtonC1_Click);
+		this.epiButtonC2.Click -= new System.EventHandler(this.epiButtonC2_Click);
+		this.epiButtonC3.Click -= new System.EventHandler(this.epiButtonC3_Click);
+		this.epiUltraGridC1.InitializeLayout -= new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.epiUltraGridC1_InitializeLayout);
+		this.epiTextBoxC1.TextChanged -= new System.EventHandler(this.epiTextBoxC1_TextChanged);
+		this.epiUltraGridC1.AfterCellUpdate -= new Infragistics.Win.UltraWinGrid.CellEventHandler(this.epiUltraGridC1_AfterCellUpdate);
+		// End Wizard Added Object Disposal
+
+		// Begin Custom Code Disposal
+
+		// End Custom Code Disposal
+	}
+
+	private DataTable GetListCode(string callnum)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+
+        dataset.ExecutionParameter.AddExecutionParameterRow("CallNum",callnum, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        DataSet ds = querry.ExecuteByID("DVT-CallSafetyList", dataset);
+        return ds.Tables[0];
+    }
+
+	private DataTable GetUD04(string key1,string key2,string key3)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+
+        dataset.ExecutionParameter.AddExecutionParameterRow("Key1",key1, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+		dataset.ExecutionParameter.AddExecutionParameterRow("Key2",key2, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+		dataset.ExecutionParameter.AddExecutionParameterRow("Key3",key3, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        DataSet ds = querry.ExecuteByID("DVT-UD04", dataset);
+        return ds.Tables[0];
+    }
+
+	private DataTable GetUD109(string key1)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+
+        dataset.ExecutionParameter.AddExecutionParameterRow("Key1",key1, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        DataSet ds = querry.ExecuteByID("DVT-UD109", dataset);
+        return ds.Tables[0];
+    }
+
+	private DataTable GetMaxLine(string key1,string key2,string key3)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+
+        dataset.ExecutionParameter.AddExecutionParameterRow("Key1",key1, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+		dataset.ExecutionParameter.AddExecutionParameterRow("Key2",key2, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+		dataset.ExecutionParameter.AddExecutionParameterRow("Key3",key3, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        DataSet ds = querry.ExecuteByID("DVT-MaxUD04Line", dataset);
+        return ds.Tables[0];
+    }
+
+	private void epiButtonC1_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		EpiDataView edvheadView = ((EpiDataView)(this.oTrans.EpiDataViews["headView"]));
+		System.Data.DataRow edvheadViewRow = edvheadView.CurrentDataRow;
+		if ((edvheadViewRow == null))
+		{
+			return;
+		}
+		UD04Adapter UD04 = new UD04Adapter(this.oTrans);
+        UD04.BOConnect();
+		string whereClause = "Key1 = '" + edvheadViewRow["CustNum"].ToString() + "' AND Key2 = '" + edvheadViewRow["ShipToNum"].ToString() + "' AND Key3 = '" + edvheadViewRow["CallNum"].ToString() + "'";
+        System.Collections.Hashtable whereClauses = new System.Collections.Hashtable(1);
+        whereClauses.Add("UD04", whereClause);
+        SearchOptions searchOptions = SearchOptions.CreateRuntimeSearch(whereClauses, DataSetMode.RowsDataSet);
+        UD04.InvokeSearch(searchOptions);
+		foreach (UltraGridRow s in epiUltraGridC1.Rows)
+	    {
+			if (Convert.ToInt32(s.Cells["Calculated_Chk"].Value) == 1)
+			{
+				if (s.Cells["UD04_Key4"].Value.ToString() == "")
+			    {
+					string k4 = "";
+					DataTable tblMax = GetMaxLine(s.Cells["UD04_Key1"].Value.ToString(),s.Cells["UD04_Key2"].Value.ToString(),s.Cells["UD04_Key3"].Value.ToString());
+					if (tblMax == null || tblMax.Rows.Count == 0)
+					{
+						k4 = "001";
+					}
+					else
+					{
+						k4 = (Convert.ToInt32(tblMax.Rows[0]["Calculated_Key4Max"]) + 1).ToString().PadLeft(3,'0');
+					}
+					UD04.GetaNewUD04();
+					int rowCount = UD04.UD04Data.UD04.Rows.Count;
+			        DataRow editRow = UD04.UD04Data.UD04.Rows[(rowCount - 1)];
+			        editRow.BeginEdit();
+			        editRow["Key1"] = s.Cells["UD04_Key1"].Value.ToString();
+			        editRow["Key2"] = s.Cells["UD04_Key2"].Value.ToString();
+					editRow["Key3"] = s.Cells["UD04_Key3"].Value.ToString();
+			        editRow["Key4"] = k4;
+			        editRow["Character01"] = s.Cells["UD04_Character01"].Value.ToString();
+					editRow["Character02"] = s.Cells["UD04_Character02"].Value.ToString();
+					editRow["Character03"] = s.Cells["UD04_Character03"].Value.ToString();
+					editRow["Character04"] = s.Cells["UD04_Character04"].Value.ToString();
+					editRow["CheckBox01"] = Convert.ToBoolean(s.Cells["UD04_CheckBox01"].Value);
+					editRow["CheckBox02"] = Convert.ToBoolean(s.Cells["UD04_CheckBox02"].Value);
+			        editRow.EndEdit();
+					UD04.Update();
+				}
+				else
+				{
+					DataRow[] dr = UD04.UD04Data.UD04.Select("Key1 = '" + s.Cells["UD04_Key1"].Value.ToString() + "' AND Key2 = '" + s.Cells["UD04_Key2"].Value.ToString() + "' AND Key3 = '" + s.Cells["UD04_Key3"].Value.ToString() + "' AND Key4 = '" + s.Cells["UD04_Key4"].Value.ToString() + "'");
+					DataRow editRow = dr[0];
+					editRow.BeginEdit();
+					editRow["Character01"] = s.Cells["UD04_Character01"].Value.ToString();
+					editRow["Character02"] = s.Cells["UD04_Character02"].Value.ToString();
+					editRow["Character03"] = s.Cells["UD04_Character03"].Value.ToString();
+					editRow["Character04"] = s.Cells["UD04_Character04"].Value.ToString();
+					editRow["CheckBox01"] = Convert.ToBoolean(s.Cells["UD04_CheckBox01"].Value);
+					editRow["CheckBox02"] = Convert.ToBoolean(s.Cells["UD04_CheckBox02"].Value);
+			        editRow.EndEdit();
+					UD04.Update();
+				}
+			}
+		}
+		UD04.Dispose();
+		tblLine = GetUD04(edvheadViewRow["CustNum"].ToString(),edvheadViewRow["ShipToNum"].ToString(),edvheadViewRow["CallNum"].ToString());
+		epiUltraGridC1.DataSource = tblLine;
+		MessageBox.Show("Update Successful!", "Message");
+	}
+
+	private void epiButtonC2_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		EpiDataView edvheadView = ((EpiDataView)(this.oTrans.EpiDataViews["headView"]));
+		System.Data.DataRow edvheadViewRow = edvheadView.CurrentDataRow;
+		if ((edvheadViewRow != null))
+		{
+			tblLine.Rows.Add(edvheadViewRow["CustNum"].ToString(),edvheadViewRow["ShipToNum"].ToString(),edvheadViewRow["CallNum"].ToString(),
+			"","","","","",0,0,1);
+		}
+	}
+
+	private void epiButtonC3_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		if (epiUltraGridC1.Selected.Rows.Count == 0)
+		{
+			MessageBox.Show("Please select Line(s) to Delete!", "Error");
+            return;
+		}
+		DialogResult dialogResult = MessageBox.Show("These selected lines will be deleted. Are you sure?", "Message", MessageBoxButtons.YesNo);
+        if (dialogResult == DialogResult.No)
+        {
+			return;
+		}
+		EpiDataView edvheadView = ((EpiDataView)(this.oTrans.EpiDataViews["headView"]));
+		System.Data.DataRow edvheadViewRow = edvheadView.CurrentDataRow;
+		if ((edvheadViewRow != null))
+		{
+			UD04Adapter UD04 = new UD04Adapter(this.oTrans);
+	        UD04.BOConnect();
+			string whereClause = "Key1 = '" + edvheadViewRow["CustNum"].ToString() + "' AND Key2 = '" + edvheadViewRow["ShipToNum"].ToString() + "' AND Key3 = '" + edvheadViewRow["CallNum"].ToString() + "'";
+	        System.Collections.Hashtable whereClauses = new System.Collections.Hashtable(1);
+	        whereClauses.Add("UD04", whereClause);
+	        SearchOptions searchOptions = SearchOptions.CreateRuntimeSearch(whereClauses, DataSetMode.RowsDataSet);
+	        UD04.InvokeSearch(searchOptions);
+			int i = 0;
+	        while (i == 0)
+	        {
+			    foreach (UltraGridRow s in epiUltraGridC1.Selected.Rows)
+			    {
+
+					if (s.Cells["UD04_Key4"].Value.ToString() != "")
+			        {
+			            DataRow[] drsDeleted = UD04.UD04Data.UD04.Select("Key1 = '" + edvheadViewRow["CustNum"].ToString() + "' AND Key2 = '" + edvheadViewRow["ShipToNum"].ToString() + "' AND Key3 = '" + edvheadViewRow["CallNum"].ToString() + "' AND Key4 = '" + s.Cells["UD04_Key4"].Value.ToString() + "'");
+			            UD04.Delete(drsDeleted[0]);
+			        }
+			        tblLine.Rows.Remove((s.ListObject as DataRowView).Row);
+				}
+	            if (epiUltraGridC1.Selected.Rows.Count == 0)
+	            {
+	                i = 1;
+	            }
+			}
+			UD04.Dispose();
+		}
+	}
+
+	private void epiUltraGridC1_InitializeLayout(object sender, Infragistics.Win.UltraWinGrid.InitializeLayoutEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		foreach (UltraGridColumn dc in args.Layout.Bands[0].Columns)
+	    {
+	        dc.CellActivation = Infragistics.Win.UltraWinGrid.Activation.ActivateOnly;
+	    }
+		args.Layout.Bands[0].Columns["UD04_Character01"].CellActivation = Infragistics.Win.UltraWinGrid.Activation.AllowEdit;
+		args.Layout.Bands[0].Columns["UD04_Character02"].CellActivation = Infragistics.Win.UltraWinGrid.Activation.AllowEdit;
+		args.Layout.Bands[0].Columns["UD04_Character03"].CellActivation = Infragistics.Win.UltraWinGrid.Activation.AllowEdit;
+		args.Layout.Bands[0].Columns["UD04_Character04"].CellActivation = Infragistics.Win.UltraWinGrid.Activation.AllowEdit;
+		args.Layout.Bands[0].Columns["UD04_CheckBox01"].CellActivation = Infragistics.Win.UltraWinGrid.Activation.AllowEdit;
+		args.Layout.Bands[0].Columns["UD04_CheckBox02"].CellActivation = Infragistics.Win.UltraWinGrid.Activation.AllowEdit;
+		args.Layout.Bands[0].Columns["UD04_Key1"].Hidden = true;
+		args.Layout.Bands[0].Columns["UD04_Key2"].Hidden = true;
+		args.Layout.Bands[0].Columns["UD04_Key3"].Hidden = true;
+		args.Layout.Bands[0].Columns["Calculated_Chk"].Hidden = true;
+	}
+
+	private void epiTextBoxC1_TextChanged(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		if (epiTextBoxC1.Text == "" || epiTextBoxC1.Text == "0")
+		{
+			tblLine = GetUD04("qwerty","","");
+			epiUltraGridC1.DataSource = tblLine;
+		}
+		else
+		{
+			EpiDataView edvheadView = ((EpiDataView)(this.oTrans.EpiDataViews["headView"]));
+			System.Data.DataRow edvheadViewRow = edvheadView.CurrentDataRow;
+			if ((edvheadViewRow != null))
+			{
+				tblLine = GetUD04(edvheadViewRow["CustNum"].ToString(),edvheadViewRow["ShipToNum"].ToString(),edvheadViewRow["CallNum"].ToString());
+				if (tblLine == null || tblLine.Rows.Count == 0)
+				{
+					GetNewLines(edvheadViewRow["CustNum"].ToString(),edvheadViewRow["ShipToNum"].ToString(),edvheadViewRow["CallNum"].ToString());
+					tblLine = GetUD04(edvheadViewRow["CustNum"].ToString(),edvheadViewRow["ShipToNum"].ToString(),edvheadViewRow["CallNum"].ToString());
+					epiUltraGridC1.DataSource = tblLine;
+				}
+				else
+				{
+					epiUltraGridC1.DataSource = tblLine;
+				}
+			}
+			else
+			{
+				tblLine = GetUD04("qwerty","","");
+				epiUltraGridC1.DataSource = tblLine;
+			}
+		}
+	}
+	
+	private void GetNewLines(string cust, string shipto, string call)
+	{
+		DataTable tblListCode = GetListCode(call);
+		if (tblListCode == null || tblListCode.Rows.Count == 0)
+		{
+			return;
+		}
+		DataTable tblUD109 = GetUD109(tblListCode.Rows[0]["Calculated_ListCode"].ToString());
+		if (tblUD109 == null || tblUD109.Rows.Count == 0)
+		{
+			return;
+		}
+		UD04Adapter UD04 = new UD04Adapter(this.oTrans);
+        UD04.BOConnect();
+		foreach (DataRow dr in tblUD109.Rows)
+		{
+			UD04.GetaNewUD04();
+			int rowCount = UD04.UD04Data.UD04.Rows.Count;
+	        DataRow editRow = UD04.UD04Data.UD04.Rows[(rowCount - 1)];
+	        editRow.BeginEdit();
+	        editRow["Key1"] = cust;
+	        editRow["Key2"] = shipto;
+			editRow["Key3"] = call;
+	        editRow["Key4"] = dr["UD109A_ChildKey1"].ToString();
+			//editRow["Key5"] = "Key5";
+	        editRow["Character01"] = dr["UD109A_Character01"].ToString();
+			editRow["Character02"] = dr["UD109A_Character02"].ToString();
+			editRow["Character03"] = dr["UD109A_Character03"].ToString();
+			editRow["Character04"] = dr["UD109A_Character04"].ToString();
+			editRow["CheckBox01"] = Convert.ToBoolean(dr["UD109A_CheckBox01"]);
+			editRow["CheckBox02"] = Convert.ToBoolean(dr["UD109A_CheckBox02"]);
+	        editRow.EndEdit();
+			UD04.Update();
+		}
+		UD04.Dispose();
+	}
+
+	private void epiUltraGridC1_AfterCellUpdate(object sender, Infragistics.Win.UltraWinGrid.CellEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		epiUltraGridC1.ActiveRow.Cells["Calculated_Chk"].Value = 1;
+	}
+}
+
+
+
+
+private static void baseToolbarsManager_ToolClick(object sender, Infragistics.Win.UltraWinToolbars.ToolClickEventArgs args)
+{
+     if (args.Tool.Key == "SaveTool")
+     {
+             if (tbxJob == "")
+             {
+                  MessageBox.Show("Error: No job was entered");
+                  //Stop the save event from happening here
+             }
+      }
+}
+// Call from 
+private void btnTest_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		try
+	     {
+		   string[] CompoundKeys =new string[]{"1034,1035,1036"};
+		            CompoundKeyBinding cb=new CompoundKeyBinding(CompoundKeys,null,null);
+		            LaunchFormOptions opts = new LaunchFormOptions();
+		            opts.ValueIn=cb;
+		 
+	            ProcessCaller.LaunchForm(oTrans, "MNRe0001", opts);
+	     }
+	     catch (Exception exception)
+	     {
+	         ExceptionBox.Show(exception);
+	     }
+	}
+private void BAQReportForm_Load(object sender, EventArgs args)
+	{
+		// Add Event Handler Code
+		if (BAQReportForm.LaunchFormOptions != null) 
+		{ 
+			EpiDataView edv = (EpiDataView)oTrans.EpiDataViews["FilterList1"]; 
+			//edv.dataView[edv.Row]["field1"] = BAQReportForm.LaunchFormOptions.ContextValue.ToString(); 
+			CustShipByPack((BAQReportForm.LaunchFormOptions.ValueIn as Ice.Lib.Framework.CompoundKeyBinding).CompoundKeys[0]);
+		} 
+	}
+
+	private void CustShipByPack(string packlist)
+	{
+		Erp.Adapters.CustShipAdapter adap= new Erp.Adapters.CustShipAdapter(this.oTrans);
+		adap.BOConnect();	
+
+		string whereClause = string.Format("PackNum IN ({0})", packlist);
+		System.Collections.Hashtable whereClauses = new System.Collections.Hashtable(1);
+		whereClauses.Add("ShipHead", whereClause);
+	
+		// Call the adapter search.
+		SearchOptions searchOptions = SearchOptions.CreateRuntimeSearch(whereClauses, DataSetMode.RowsDataSet);
+		adap.InvokeSearch(searchOptions);
+			
+		Ice.Lib.Framework.EpiUltraGrid grid=this.csm.GetNativeControlReference("65bf086d-5f0d-4e92-b810-6d2dea14cb48-1") as Ice.Lib.Framework.EpiUltraGrid;
+		if(grid!=null)
+		{
+			grid.DataSource = adap.CustShipData.ShipHead;
+		}		
+
+		adap.Dispose();
+		adap=null;
+	}
+private DataTable GetData(string partNum, string revision)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+        dataset.ExecutionParameter.AddExecutionParameterRow("PartNum", partNum, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        dataset.ExecutionParameter.AddExecutionParameterRow("Revision", revision, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        //dataset.ExecutionParameter.AddExecutionParameterRow("GroupID", groupId, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        //dataset.ExecutionParameter.AddExecutionParameterRow("OpSeq", OpSeq, "int", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+
+        DataSet ds = querry.ExecuteByID("lc-01", dataset);
+        return ds.Tables[0];
+    }
+    private void numProdStd_Kg_LostFocus(object sender, System.EventArgs args)
+    {
+        // ** Place Event Handling Code Here **
+        //MessageBox.Show("Change value Prod Std");
+        //numProdStd.Value=0;
+        EpiDataView edvVarName = (EpiDataView)oTrans.EpiDataViews["ECOOpr"];
+        //decimal VarName = decimal.Parse(edvVarName.dataView[edvVarName.Row]["Prod_c"].ToString());
+        string partNum = edvVarName.dataView[edvVarName.Row]["PartNum"].ToString();
+        string rev = edvVarName.dataView[edvVarName.Row]["RevisionNum"].ToString();
+        DataTable tbl = GetData(partNum, rev);
+        if (tbl != null && tbl.Rows.Count > 0)
+        {
+            edvVarName.dataView[edvVarName.Row]["ProdStandard"] = tbl.Rows[0]["Calculated_f4"].ToString();
+        }
+
+    }
+
+    private void EngWorkBenchEntryForm_Load(object sender, EventArgs args)
+    {
+        // Add Event Handler Code
+        //numProdStd_Kg.Value=0;
+    }
+}
+
+
+//Lay BAQ khong co parameter
+private DataTable GetPromotionCode(string BAQID)
+{
+    Ice.Core.Session se = (Ice.Core.Session)oTrans.Session;
+    Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+    Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+
+    //dataset.ExecutionParameter.AddExecutionParameterRow("PartNum", "BV", "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+    DataSet ds = querry.ExecuteByID(BAQID, dataset);
+    return ds.Tables[0];
+}
+	//grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+		grid.DisplayLayout.AutoFitStyle = Infragistics.Win.UltraWinGrid.AutoFitStyle.ResizeAllColumns;
+		
+	private void BAQReportForm_Load(object sender, EventArgs args)
+	{
+		// Add Event Handler Code
+		if (BAQReportForm.LaunchFormOptions != null) 
+		{ 
+			EpiDataView edv = (EpiDataView)oTrans.EpiDataViews["FilterList1"]; 
+			//edv.dataView[edv.Row]["field1"] = BAQReportForm.LaunchFormOptions.ContextValue.ToString(); 
+			CustShipByPack((BAQReportForm.LaunchFormOptions.ValueIn as Ice.Lib.Framework.CompoundKeyBinding).CompoundKeys[0]);
+		} 
+	}
+
+	private void CustShipByPack(string packlist)
+	{
+		Erp.Adapters.CustShipAdapter adap= new Erp.Adapters.CustShipAdapter(this.oTrans);
+		adap.BOConnect();	
+
+		string whereClause = string.Format("PackNum IN ({0})",packlist);
+		System.Collections.Hashtable whereClauses = new System.Collections.Hashtable(1);
+		whereClauses.Add("ShipHead", whereClause);
+	
+		// Call the adapter search.
+		SearchOptions searchOptions = SearchOptions.CreateRuntimeSearch(whereClauses, DataSetMode.RowsDataSet);
+		adap.InvokeSearch(searchOptions);
+			
+		Ice.Lib.Framework.EpiUltraGrid grid=this.csm.GetNativeControlReference("65bf086d-5f0d-4e92-b810-6d2dea14cb48-1") as Ice.Lib.Framework.EpiUltraGrid;
+		if(grid!=null)
+		{
+			grid.DataSource=adap.CustShipData.ShipHead;
+		}		
+
+		adap.Dispose();
+		adap=null;
+	}
+Erp.Adapters.ReceiptAdapter _RAdapter = new Erp.Adapters.ReceiptAdapter(this.oTrans);
+		_RAdapter.BOConnect();	
+		string[] rcv = valueIn.Split('\n');
+		DataTable tbl = new DataTable();
+		for(int i = 0; i < rcv.Length ; i++)
+        {	
+            string[] str = rcv[i].Split('~');
+			_RAdapter.GetByID(Convert.ToInt32(str[0].Trim()), str[1].Trim(), str[2].Trim());
+			tbl.Merge(_RAdapter.ReceiptData.RcvHead);
+		}
+		Ice.Lib.Framework.EpiUltraGrid grid=this.csm.GetNativeControlReference("2eb81f87-ad02-4289-899c-16a9f4d30a6c-1") as Ice.Lib.Framework.EpiUltraGrid;
+		if(tbl != null && tbl.Rows.Count > 0)
+		{
+			if(grid != null)
+			{
+				grid.DataSource = tbl;
+				grid.DataBind();
+			}	
+		}
+		EpiDataView edv = (EpiDataView)(oTrans.EpiDataViews["FilterList1"]);
+		foreach (UltraGridRow r in grid.Rows)
+		{
+			DataRowView editRow = edv.dataView.AddNew();
+			editRow.BeginEdit();
+			editRow["VendorNum"] = Convert.ToInt32(r.Cells["VendorNum"].Value);
+			editRow["PurPoint"] = r.Cells["PurPoint"].Value.ToString();
+			editRow["PackSlip"] = r.Cells["PackSlip"].Value.ToString();
+			editRow.EndEdit();
+		}
+		_RAdapter.Dispose();
+		_RAdapter = null;
+// **************************************************
+// Custom code for UD01Form
+// Created: 3/07/2017 11:50:21 AM
+// **************************************************
+using System;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Windows.Forms;
+using Ice.BO;
+using Ice.UI;
+using Ice.Lib;
+using Ice.Adapters;
+using Ice.Lib.Customization;
+using Ice.Lib.ExtendedProps;
+using Ice.Lib.Framework;
+using Ice.Lib.Searches;
+using Ice.UI.FormFunctions;
+using Infragistics.Win.UltraWinGrid;
+using Erp.Adapters;
+using Erp.BO;
+
+public class Script
+{
+	// ** Wizard Insert Location - Do Not Remove 'Begin/End Wizard Added Module Level Variables' Comments! **
+	// Begin Wizard Added Module Level Variables **
+	private EpiDataView header;
+    private EpiDataView line;
+	// End Wizard Added Module Level Variables **
+
+	// Add Custom Module Level Variables Here **
+	
+	//Ice.Lib.Framework.EpiUltraGrid grid;
+	public void InitializeCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Variable Initialization' lines **
+		// Begin Wizard Added Variable Initialization
+		LoadHeaderView();
+        LoadLineView();
+		// End Wizard Added Variable Initialization
+
+		// Begin Wizard Added Custom Method Calls
+
+		this.epiButtonC1.Click += new System.EventHandler(this.epiButtonC1_Click);
+		this.epiTextBoxC1.TextChanged += new System.EventHandler(this.epiTextBoxC1_TextChanged);
+		this.epiUltraGridC1.AfterSelectChange += new Infragistics.Win.UltraWinGrid.AfterSelectChangeEventHandler(this.epiUltraGridC1_AfterSelectChange);
+		this.epiDateTimeEditorC1.ValueChanged += new System.EventHandler(this.epiDateTimeEditorC1_ValueChanged);
+		this.epiUltraGridC2.InitializeLayout += new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.epiUltraGridC2_InitializeLayout);
+		// End Wizard Added Custom Method Calls
+		//grid=this.csm.GetNativeControlReference("7ad954ad-f200-4a69-a6c2-ee4462beece5") as Ice.Lib.Framework.EpiUltraGrid;
+		
+	}
+
+	public void DestroyCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Object Disposal' lines **
+		// Begin Wizard Added Object Disposal
+
+		this.epiButtonC1.Click -= new System.EventHandler(this.epiButtonC1_Click);
+		this.epiTextBoxC1.TextChanged -= new System.EventHandler(this.epiTextBoxC1_TextChanged);
+		this.epiUltraGridC1.AfterSelectChange -= new Infragistics.Win.UltraWinGrid.AfterSelectChangeEventHandler(this.epiUltraGridC1_AfterSelectChange);
+		this.epiDateTimeEditorC1.ValueChanged -= new System.EventHandler(this.epiDateTimeEditorC1_ValueChanged);
+		this.epiUltraGridC2.InitializeLayout -= new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.epiUltraGridC2_InitializeLayout);
+		// End Wizard Added Object Disposal
+
+		// Begin Custom Code Disposal
+
+		// End Custom Code Disposal
+	}
+
+	private void LoadHeaderView()
+    {
+        DynamicQueryAdapter _baqAdapter = new DynamicQueryAdapter(oTrans);
+        _baqAdapter.BOConnect();
+
+        _baqAdapter.ExecuteByID("83158-MSContainerRvcHed");
+
+        header = new EpiDataView();
+
+        header.dataView = new DataView(_baqAdapter.QueryResults.Tables["Results"]);
+
+
+        // Make columns read-only
+        foreach (DataColumn dc in header.dataView.Table.Columns)
+        {
+
+            dc.ExtendedProperties["ReadOnly"] = true;
+
+            dc.ExtendedProperties["Like"] = dc.ColumnName.ToString();
+
+        }
+
+        /*if (header.dataView.Table.Columns.Contains("Calculated_Select"))
+        {
+            header.dataView.Table.Columns["Calculated_Select"].ExtendedProperties["ReadOnly"] = false;
+        }*/
+
+        if ((oTrans.EpiDataViews.ContainsKey("BAQheader") == false))
+        {
+
+            oTrans.Add("BAQheader", header);
+        }
+
+        _baqAdapter.Dispose();
+
+    }
+
+	private void LoadLineView()
+	{
+		DynamicQueryAdapter _baqAdapter = new DynamicQueryAdapter(oTrans);
+		_baqAdapter.BOConnect();
+
+		_baqAdapter.ExecuteByID("83158-MSContainerRvc");
+
+		line = new EpiDataView();
+
+        line.dataView = new DataView(_baqAdapter.QueryResults.Tables["Results"]);
+
+
+        // Make columns read-only
+        foreach (DataColumn dc in line.dataView.Table.Columns)
+        {
+
+            dc.ExtendedProperties["ReadOnly"] = true;
+
+            dc.ExtendedProperties["Like"] = dc.ColumnName.ToString();
+
+        }
+		if (line.dataView.Table.Columns.Contains("Calculated_BinNum"))
+        {
+            line.dataView.Table.Columns["Calculated_BinNum"].ExtendedProperties["ReadOnly"] = false;
+        }
+		if (line.dataView.Table.Columns.Contains("Calculated_LotNum"))
+        {
+            line.dataView.Table.Columns["Calculated_LotNum"].ExtendedProperties["ReadOnly"] = false;
+        }
+
+		if ((oTrans.EpiDataViews.ContainsKey("BAQline") == false))
+        {
+
+            oTrans.Add("BAQline", line);
+        }
+
+        _baqAdapter.Dispose();
+
+        line.dataView.RowFilter = "ContainerHeader_ContainerID = 0";
+	}
+
+	private void FilterLine()
+    {
+        if (epiUltraGridC1.Selected.Rows.Count == 0)
+        {
+            line.dataView.RowFilter = "ContainerHeader_ContainerID = 0";
+        }
+        else if (epiUltraGridC1.Selected.Rows.Count == 1)
+        {
+            line.dataView.RowFilter = "ContainerHeader_ContainerID = " + epiUltraGridC1.Selected.Rows[0].Cells["ContainerHeader_ContainerID"].Value.ToString();
+        }
+        else
+        {
+            line.dataView.RowFilter = "ContainerHeader_ContainerID = 0";
+            MessageBox.Show("Please select ONLY one Container for each Container Receipt!", "Error");
+        }
+    }
+
+	private void epiButtonC1_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		int linecount = 0;
+        int diff = 0;
+        string site1 = "";
+        string site2 = "";
+        foreach (UltraGridRow li in epiUltraGridC2.Rows)
+        {
+            linecount += 1;
+            if (linecount == 1)
+            {
+                site1 = li.Cells["PORel_Plant"].Value.ToString();
+                site2 = li.Cells["PORel_Plant"].Value.ToString();
+            }
+            else
+            {
+                site2 = li.Cells["PORel_Plant"].Value.ToString();
+            }
+            if (site1 != site2)
+            {
+                diff += 1;
+            }
+        }
+		if (linecount == 0)
+        {
+            MessageBox.Show("There is no Selected Container.", "Error");
+            return;
+        }
+        if (diff > 0)
+        {
+            MessageBox.Show("Selected PO Rels - Sites are Different. Please select PO Rels with the same Sites for this Container!", "Error");
+            return;
+        }
+        
+
+        (this.oTrans.Session as Ice.Core.Session).PlantID = site1;
+
+		ReceiptAdapter _RAdapter = new ReceiptAdapter(oTrans);
+		_RAdapter.BOConnect();
+
+		int contID = Convert.ToInt32(epiUltraGridC1.Selected.Rows[0].Cells["ContainerHeader_ContainerID"].Value);
+		_RAdapter.ReceiveContainer(contID);
+
+		foreach (UltraGridRow li2 in epiUltraGridC2.Rows)
+        {
+			DataRow[] matchRows = _RAdapter.ReceiptData.RcvDtl.Select("PONum = " + li2.Cells["ContainerDetail_PONum"].Value.ToString() + " And POLine = " + li2.Cells["ContainerDetail_POLine"].Value.ToString() + " And PORelNum = " + li2.Cells["ContainerDetail_PORelNum"].Value.ToString());
+            DataRow editRow = matchRows[0];
+			editRow.BeginEdit();
+            editRow["BinNum"] = li2.Cells["Calculated_BinNum"].Value;
+			editRow["LotNum"] = li2.Cells["Calculated_LotNum"].Value;
+			editRow["Received"] = 1;
+            editRow.EndEdit();
+			_RAdapter.Update();
+		}
+		_RAdapter.Dispose();
+		EpiMessageBox.Show("Shipment ID: " + contID.ToString() + " Received!", "Message");
+	}
+
+	private void SetFilter()
+	{
+		// ** Place Event Handling Code Here **
+		string FilterString;
+        string[] ContIDs = epiTextBoxC1.Text.Split(' ');
+        int contID = 0;
+        FilterString = "(";
+        foreach (string cont in ContIDs)
+        {
+            if (contID == 0)
+            {
+                FilterString += "Convert(ContainerHeader_ContainerID,'System.String') LIKE '*" + cont + "*'";
+                contID = 1;
+            }
+            else
+            {
+                FilterString += " OR Convert(ContainerHeader_ContainerID,'System.String') LIKE '*" + cont + "*'";
+            }
+        }
+		FilterString += ")";
+		if (epiDateTimeEditorC1.Value != null)
+        {
+            FilterString += " AND ContainerHeader_DueDate = \'" + Convert.ToDateTime(epiDateTimeEditorC1.Value).Date.ToString() + "\'";
+        }
+        header.dataView.RowFilter = FilterString;
+	}
+
+	private void epiUltraGridC1_AfterSelectChange(object sender, Infragistics.Win.UltraWinGrid.AfterSelectChangeEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		FilterLine();
+	}
+
+	private void epiDateTimeEditorC1_ValueChanged(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		SetFilter();
+	}
+
+	private void epiTextBoxC1_TextChanged(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		SetFilter();
+	}
+
+	private void epiUltraGridC2_InitializeLayout(object sender, Infragistics.Win.UltraWinGrid.InitializeLayoutEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+	}
+}
+private void cboInvType_TextChanged(object sender, System.EventArgs args)
+	{
+		// * Place Event Handling Code Here *
+//		EpiDataView edvAPInvDtl = ((EpiDataView)(this.oTrans.EpiDataViews["APInvDtl"]));
+//		DataRowView rowSelected = edvAPInvDtl.SelectedRow;
+//		rowSelected.BeginEdit();
+//		rowSelected["VNInvoiceType_c"] = cboInvType.Text;
+//		rowSelected.EndEdit();
+		string temp = "";
+		int position = strInvLine.IndexOf(txtInvLine.Text + ";");
+		string strInvType = cboInvType.Text;
+		if(position < 0)
+		{
+			if(strInvType.Length > 1)
+			{
+				strInvLine += txtInvLine.Text + "" + strInvType.Substring(0,1) + "" + txtInvDate.Text + "~" + txtInvLine.Text + ";";
+			}
+			else
+			{
+				strInvLine += txtInvLine.Text + "" + "" + "" + txtInvDate.Text + "~" + txtInvLine.Text + ";";
+			}
+		}
+		else
+		{
+			string[] lines = Regex.Split(strInvLine, txtInvLine.Text + ";");
+			string line = lines[0];
+			string[] tempLine = Regex.Split(line, ";");
+			if(strInvType.Length > 1)
+			{
+            	strInvLine = strInvLine.Replace(tempLine[tempLine.Length - 1],txtInvLine.Text + "" + strInvType.Substring(0,1) + "" + txtInvDate.Text + "~");
+			}
+			else
+			{
+				strInvLine = strInvLine.Replace(tempLine[tempLine.Length - 1],txtInvLine.Text + "" + "" + "" + txtInvDate.Text + "~");
+			}
+		}
+		EpiDataView Bpm = ((EpiDataView)(this.oTrans.EpiDataViews["CallContextBpmData"]));
+		System.Data.DataRow BpmRow = Bpm.CurrentDataRow;
+		if ((BpmRow != null))
+		{
+			BpmRow.BeginEdit();
+			BpmRow["Character03"] = strInvLine;
+			BpmRow.EndEdit();
+		}
+	}
+
+foreach (var hed in (from he in ttInvcHead select he))
+{
+  if (hed.CurrencyCode == "USD")
+  {
+    hed.ExcRate_c = hed.ExchangeRate;
+  }
+  else
+  {
+    decimal totline = 0;
+    decimal exrate = 0;
+    var dtl = (from dt in Db.InvcDtl where dt.Company == hed.Company && dt.InvoiceNum == hed.InvoiceNum group dt by new { dt.Company, dt.InvoiceNum } into g select new { comp = g.Key.Company, invc =  g.Key.InvoiceNum, lineamt = g.Sum(x => x.ExtPrice), disamt = g.Sum(x => x.Discount), chrgamt = g.Sum(x => x.TotalMiscChrg) }).FirstOrDefault();
+    if (dtl != null)
+    {
+      totline = dtl.lineamt - dtl.disamt + dtl.chrgamt;
+    }
+    if (totline != 0)
+    {
+      foreach (var lin in (from li in Db.InvcDtl where li.Company == hed.Company && li.InvoiceNum == hed.InvoiceNum select li))
+      {
+        exrate += ((lin.ExtPrice - lin.Discount + lin.TotalMiscChrg)/totline)*lin.ExcRate_c;
+      }
+      hed.ExcRate_c = exrate;
+    }
+    else
+    {
+      var exRate = (from exr in Db.CurrExRate where exr.Company == hed.Company && exr.EffectiveDate <= hed.InvoiceDate && exr.RateGrpCode == "PROD" && exr.SourceCurrCode == "USD" && exr.TargetCurrCode == "VND" orderby exr.EffectiveDate descending select exr).FirstOrDefault();
+      if(exRate!=null)
+      {
+         hed.ExcRate_c = Convert.ToDecimal(exRate.CurrentRate);
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+// **************************************************
+// Custom code for UD01Form
+// Created: 6/4/2018 9:45:07 AM
+// **************************************************
+
+extern alias Erp_Contracts_BO_InvTransfer;
+extern alias Erp_Contracts_BO_SelectedSerialNumbers;
+extern alias Erp_Adapters_SerialNo;
+extern alias Erp_Contracts_BO_SerialNo;
+extern alias Ice_Contracts_BO_UD08;
+extern alias Ice_Adapters_UD08;
+
+using System;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Windows.Forms;
+using Ice.BO;
+using Ice.UI;
+using Ice.Lib;
+using Ice.Adapters;
+using Ice.Lib.Customization;
+using Ice.Lib.ExtendedProps;
+using Ice.Lib.Framework;
+using Ice.Lib.Searches;
+using Ice.UI.FormFunctions;
+using Infragistics.Win.UltraWinGrid;
+using Infragistics.Win;
+using System.Drawing;
+
+public class Script
+{
+	// ** Wizard Insert Location - Do Not Remove 'Begin/End Wizard Added Module Level Variables' Comments! **
+	// Begin Wizard Added Module Level Variables **
+
+	// End Wizard Added Module Level Variables **
+
+	// Add Custom Module Level Variables Here **
+	private EpiDataView header;
+	private EpiDataView inTransit;
+
+	public void InitializeCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Variable Initialization' lines **
+		// Begin Wizard Added Variable Initialization
+
+		// End Wizard Added Variable Initialization
+
+		// Begin Wizard Added Custom Method Calls
+
+		LoadDataTransfer();
+		//LoadDataInTransit();
+		this.cboTBIN.AfterDropDown += new System.EventHandler(this.cboTBIN_AfterDropDown);
+		this.btnTransfer.Click += new System.EventHandler(this.btnTransfer_Click);
+		this.cboFWH.RowSelected += new Infragistics.Win.UltraWinGrid.RowSelectedEventHandler(this.cboFWH_RowSelected);
+		this.cboTWH.RowSelected += new Infragistics.Win.UltraWinGrid.RowSelectedEventHandler(this.cboTWH_RowSelected);
+		this.btnLoad.Click += new System.EventHandler(this.btnLoad_Click);
+		this.btnReceipt.Click += new System.EventHandler(this.btnReceipt_Click);
+		this.epiTextBoxC1.TextChanged += new System.EventHandler(this.epiTextBoxC1_TextChanged);
+		this.cboFWH.ValueChanged += new System.EventHandler(this.cboFWH_ValueChanged);
+		this.grdTransit.InitializeLayout += new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.grdTransit_InitializeLayout);
+		this.grdData.InitializeLayout += new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.grdData_InitializeLayout);
+		this.epiUltraGridC1.InitializeLayout += new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.epiUltraGridC1_InitializeLayout);
+		this.epiButtonC1.Click += new System.EventHandler(this.epiButtonC1_Click);
+		// End Wizard Added Custom Method Calls
+	}
+
+	public void DestroyCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Object Disposal' lines **
+		// Begin Wizard Added Object Disposal
+
+		
+		this.cboTBIN.AfterDropDown -= new System.EventHandler(this.cboTBIN_AfterDropDown);
+		this.btnTransfer.Click -= new System.EventHandler(this.btnTransfer_Click);
+		this.cboFWH.RowSelected -= new Infragistics.Win.UltraWinGrid.RowSelectedEventHandler(this.cboFWH_RowSelected);
+		this.cboTWH.RowSelected -= new Infragistics.Win.UltraWinGrid.RowSelectedEventHandler(this.cboTWH_RowSelected);
+		this.btnLoad.Click -= new System.EventHandler(this.btnLoad_Click);
+		this.btnReceipt.Click -= new System.EventHandler(this.btnReceipt_Click);
+		this.epiTextBoxC1.TextChanged -= new System.EventHandler(this.epiTextBoxC1_TextChanged);
+		this.cboFWH.ValueChanged -= new System.EventHandler(this.cboFWH_ValueChanged);
+		this.grdTransit.InitializeLayout -= new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.grdTransit_InitializeLayout);
+		this.grdData.InitializeLayout -= new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.grdData_InitializeLayout);
+		this.epiUltraGridC1.InitializeLayout -= new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.epiUltraGridC1_InitializeLayout);
+		this.epiButtonC1.Click -= new System.EventHandler(this.epiButtonC1_Click);
+		// End Wizard Added Object Disposal
+
+		// Begin Custom Code Disposal
+
+		// End Custom Code Disposal
+	}
+
+	private void UD01Form_Load(object sender, EventArgs args)
+	{
+		// Add Event Handler Code
+		var tree=this.csm.GetNativeControlReference("46c8ee42-a6f1-468b-95ba-6dfc13223ee2") as Ice.Lib.Framework.EpiTreeView;
+		tree.Parent.Parent.Parent.Visible=false;
+
+		grpAct.Dock=DockStyle.Top;
+		grdData.Dock=DockStyle.Fill;
+
+		grpLoad.Dock=DockStyle.Top;
+		grdTransit.Dock=DockStyle.Fill;
+
+		epiGroupBoxC1.Dock=DockStyle.Top;
+		epiUltraGridC1.Dock=DockStyle.Fill;
+		cboTWH.DropDownStyle = Infragistics.Win.UltraWinGrid.UltraComboStyle.DropDownList;
+		cboTBIN.DropDownStyle = Infragistics.Win.UltraWinGrid.UltraComboStyle.DropDownList;
+		grdData.BeforeCellUpdate +=new Infragistics.Win.UltraWinGrid.BeforeCellUpdateEventHandler(Grid_BeforeCellUpdate);
+		//grdTransit.BeforeCellUpdate +=new Infragistics.Win.UltraWinGrid.BeforeCellUpdateEventHandler(Grid_BeforeCellUpdate);
+	}
+
+//	private void cboFBIN_AfterDropDown(object sender, System.EventArgs args)
+//	{
+//		// ** Place Event Handling Code Here **
+//		DataView data;
+//		if(cboFBIN.DataSource.GetType().ToString().IndexOf("DataTable")>-1)
+//		{	
+//			data = new DataView(cboFBIN.DataSource as DataTable);	
+//			cboFBIN.DataSource=data;
+//		}
+//		else
+//			data=cboFBIN.DataSource as DataView;
+//		if(cboFWH.SelectedRow!=null)
+//			data.RowFilter="WhseBin_WarehouseCode='"+ cboFWH.SelectedRow.Cells["Warehse_WarehouseCode"].Value.ToString()+"'";
+//		else 
+//			data.RowFilter="WhseBin_WarehouseCode='-------'";
+//	}
+
+	private void cboTBIN_AfterDropDown(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		DataView data;
+		if(cboTBIN.DataSource.GetType().ToString().IndexOf("DataTable")>-1)
+		{	
+			data = new DataView(cboTBIN.DataSource as DataTable);	
+			cboTBIN.DataSource=data;
+		}
+		else
+			data=cboTBIN.DataSource as DataView;
+		if(cboTWH.SelectedRow!=null)
+			data.RowFilter="WhseBin_WarehouseCode='"+cboTWH.SelectedRow.Cells["Warehse_WarehouseCode"].Value.ToString()+"'";
+		else
+			data.RowFilter="WhseBin_WarehouseCode='-------'";
+	}
+
+	private void Grid_BeforeCellUpdate(object sender, Infragistics.Win.UltraWinGrid.BeforeCellUpdateEventArgs e)
+    {
+        if (e.Cell.Column.Key == "Calculated_TranQty")
+        {                
+			if(e.Cell.Row.Cells["SerialNo_SerialNumber"].Value != null 
+					&& !string.IsNullOrEmpty(e.Cell.Row.Cells["SerialNo_SerialNumber"].Value.ToString()))
+			{	
+            	e.Cancel = true;
+				MessageBox.Show("Part with serialnumber only allow tranfer one by one!");
+			}
+			if(Convert.ToDecimal(e.NewValue)>Convert.ToDecimal(e.Cell.Row.Cells["PartBin_OnhandQty"].Value))
+			{
+				e.Cancel=true;
+				MessageBox.Show("The quantity tranfer maximum equals onhand qty!");
+			}
+        }	
+    }
+
+	private void btnTransfer_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		if (cboTWH.Value == null || cboTBIN.Value == null)
+		{
+			MessageBox.Show("Please select To Warehouse and To Bin!", "Error");
+			return;
+		}
+		if(MessageBox.Show("Do you want to transfer selected item?","Confirm",MessageBoxButtons.YesNo)==DialogResult.Yes)
+		{
+			foreach(var row in grdData.Rows)
+			{	
+				if(Convert.ToBoolean(row.Cells["Calculated_Selected"].Value)
+						&& Convert.ToDecimal(row.Cells["Calculated_TranQty"].Value)>0)
+				{
+					try{
+						string partnum=row.Cells["Part_PartNum"].Value.ToString();
+						string fromwh=row.Cells["PartBin_WarehouseCode"].Value.ToString();
+						string frombin=row.Cells["PartBin_BinNum"].Value.ToString();
+						string fromlot=row.Cells["PartBin_LotNum"].Value.ToString();
+						string fromsn=row.Cells["SerialNo_SerialNumber"].Value.ToString();
+
+						string twh=cboTWH.SelectedRow.Cells["Warehse_WarehouseCode"].Value.ToString();
+						string tbin=cboTBIN.SelectedRow.Cells["WhseBin_BinNum"].Value.ToString();
+						string uom=row.Cells["PartBin_DimCode"].Value.ToString();
+						decimal qty=Convert.ToDecimal(row.Cells["Calculated_TranQty"].Value);
+						Transfer(partnum,uom,fromwh,frombin,twh,tbin,fromlot,fromsn,qty);
+						TransferLog(partnum,twh,tbin,qty,fromlot,fromsn,fromwh,frombin,uom);
+					}catch(Exception ex)
+					{
+						MessageBox.Show(ex.Message);
+					}
+				}
+			}
+			MessageBox.Show("Proccess Done!");
+			LoadData();
+		}
+	}
+	
+	private void TransferLog(string partnum, string twh, string tbin, decimal qty, string fromlot, string fromsn, string fromwh, string frombin, string uom)
+	{
+		UD08Adapter UD08 = new UD08Adapter(this.oTrans);
+        UD08.BOConnect();
+
+		UD08.GetaNewUD08();
+        int rowCount = UD08.UD08Data.UD08.Rows.Count;
+        DataRow editRow = UD08.UD08Data.UD08.Rows[(rowCount - 1)];
+        editRow.BeginEdit();
+        editRow["Key1"] = DateTime.Now.Date.ToString("yyyyMMdd") + (DateTime.Now.Hour*3600 + DateTime.Now.Minute*60 + DateTime.Now.Second).ToString().PadLeft(5,'0');
+        editRow["Key2"] = partnum;
+        editRow["Key3"] = twh;
+        editRow["Key4"] = tbin;
+		editRow["Number01"] = qty;
+		editRow["Number02"] = qty;
+		editRow["ShortChar01"] = fromlot;
+		editRow["ShortChar02"] = fromsn;
+		editRow["ShortChar03"] = uom;
+		editRow["ShortChar04"] = fromwh;
+		editRow["ShortChar05"] = frombin;
+        editRow["Date01"] = DateTime.Now.Date;
+        editRow.EndEdit();
+        UD08.Update();
+        UD08.Dispose();
+	}
+
+	private void Transfer(string partnum,string uom,string fromwh,string frombin,string twh,string tbin,string fromlot,string fromsn,decimal qty)
+	{
+		string towh="02",tobin="Main";
+		Erp.Adapters.InvTransferAdapter adap = new Erp.Adapters.InvTransferAdapter(this.oTrans);	
+		adap.BOConnect();
+		bool rowAdded = false;
+		Erp.BO.InvTransferDataSet ds = adap.GetTransferRecord(new Guid("00000000-0000-0000-0000-000000000000"),partnum, "",uom,out rowAdded);	
+	    adap.InvTransferData.Clear();
+        adap.InvTransferData.Merge(ds);
+        adap.InvTransferData.AcceptChanges();	
+		var row=adap.InvTransferData.InvTrans[adap.InvTransferData.InvTrans.Rows.Count-1];
+		string message = "";
+		if(row!=null)
+		{
+			row.BeginEdit();
+			row["TransferQtyUOM"]=uom;
+			row.EndEdit();
+			adap.ChangeUOM();
+
+			row.BeginEdit();
+			row["FromWarehouseCode"]=fromwh;
+			row.EndEdit();
+			adap.ChangeFromWhse(fromwh);
+			
+			row.BeginEdit();
+			row["FromBinNum"]=frombin;
+			row.EndEdit();
+			adap.ChangeFromBin(frombin);
+			row.BeginEdit();
+			row["FromLotNumber"]=fromlot;
+			row.EndEdit();
+			row.BeginEdit();
+			row["ToLotNumber"]=fromlot;	
+			row.EndEdit();
+			
+			adap.ChangeLot(fromlot,"", out message);	
+			row.BeginEdit();
+			row["ToWarehouseCode"]=towh;
+			row.EndEdit();
+			adap.ChangeToWhse(towh);
+			row.BeginEdit();	
+			row["ToBinNum"]=tobin;
+			row.EndEdit();
+			adap.ChangeToBin(tobin);	
+			
+			row["TranReference"]=twh+"|"+tbin;			
+			row["TransferQty"]=qty;		
+		}	
+
+		if(fromsn!="")
+		{
+			Erp.Adapters.SelectedSerialNumbersAdapter snAdap = new Erp.Adapters.SelectedSerialNumbersAdapter(this.oTrans);
+			snAdap.BOConnect();
+            if(snAdap.GetSerialNumFormat(partnum,"","",0,(this.oTrans.Session as Ice.Core.Session).PlantID))
+            {
+                adap.InvTransferData.SNFormat.Merge(snAdap.SelectedSerialNumbersData.SNFormat);                
+				adap.InvTransferData.AcceptChanges();               
+				snAdap.Dispose();
+				snAdap=null;
+
+				//search serialno
+				Erp.Adapters.SerialNoAdapter snoAdap=new Erp.Adapters.SerialNoAdapter(this.oTrans);
+				snoAdap.BOConnect();
+				
+				string whereClause = "SerialNumber='"+fromsn+"' AND PartNum='"+partnum+"'";
+	            System.Collections.Hashtable whereClauses = new System.Collections.Hashtable(1);
+	            whereClauses.Add("SerialNo", whereClause);
+	            Ice.Lib.Searches.SearchOptions searchOptions = Ice.Lib.Searches.SearchOptions.CreateRuntimeSearch(whereClauses, Ice.Lib.Searches.DataSetMode.RowsDataSet);
+				bool flag1=false;
+	            var dsSN=snoAdap.GetRows(searchOptions, out flag1);
+
+				if(dsSN!=null && dsSN.Tables["SerialNo"].Rows.Count>0)
+				{
+					var snNew=adap.InvTransferData.SelectedSerialNumbers.NewSelectedSerialNumbersRow();
+					snNew.BeginEdit();
+					foreach(DataColumn clm in snNew.Table.Columns)
+					{
+						try{
+							snNew[clm.ColumnName]=dsSN.Tables["SerialNo"].Rows[0][clm.ColumnName];
+						}catch{}
+					}
+					snNew["RowMod"]="A";
+					snNew.Deselected = false;
+		            snNew.PreventDeselect = false;
+		            snNew.PreDeselected = false;
+		            snNew.NotSavedToDB = true;
+					snNew.EndEdit();
+					adap.InvTransferData.SelectedSerialNumbers.AddSelectedSerialNumbersRow(snNew);
+				}
+				snoAdap.Dispose();
+				snoAdap=null;
+				if(row!=null)
+				{
+					row.BeginEdit();
+					row["TrackingQty"]=qty;
+					row.EndEdit();
+				}
+            }
+		}	
+
+		adap.ChangeLot(fromlot,"", out message);
+		//adap.ChangeLot(adap.InvTransferData);
+		bool flag = false;
+        string msg = "", pks = "";	
+		string legalNumberMessage = "";
+        adap.PreCommitTransfer(out flag);
+        adap.CommitTransfer(out legalNumberMessage, out pks);
+
+		adap.Dispose();
+		adap=null;
+	}
+
+	private void cboFWH_RowSelected(object sender, Infragistics.Win.UltraWinGrid.RowSelectedEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+//		try{
+//			DataView data;
+//			if(cboFBIN.DataSource.GetType().ToString().IndexOf("DataTable")>-1)
+//			{	
+//				data = new DataView(cboFBIN.DataSource as DataTable);	
+//				cboFBIN.DataSource=data;
+//			}
+//			else
+//				data=cboFBIN.DataSource as DataView;
+//	
+//			data.RowFilter="WhseBin_WarehouseCode='-------'";
+//		}catch{}
+	}
+
+	private void cboTWH_RowSelected(object sender, Infragistics.Win.UltraWinGrid.RowSelectedEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+//		try{
+//			DataView data;
+//			if(cboTBIN.DataSource.GetType().ToString().IndexOf("DataTable")>-1)
+//			{	
+//				data = new DataView(cboTBIN.DataSource as DataTable);	
+//				cboTBIN.DataSource=data;
+//			}
+//			else
+//				data=cboTBIN.DataSource as DataView;
+//	
+//			data.RowFilter="WhseBin_WarehouseCode='-------'";
+//		}catch{}
+	}
+	
+	private void LoadData()
+	{
+		/*try{
+			string wh=cboFWH.SelectedRow.Cells["Warehse_WarehouseCode"].Value.ToString();
+			//string bin=cboFBIN.SelectedRow.Cells["WhseBin_BinNum"].Value.ToString();
+			string bin = "";
+			grdData.DataSource=GetData(wh);
+			foreach(var clm in grdData.DisplayLayout.Bands[0].Columns)
+			{
+				if(clm.Key!="Calculated_Selected" && clm.Key!="Calculated_TranQty")
+				{
+					clm.CellActivation = Infragistics.Win.UltraWinGrid.Activation.ActivateOnly;
+					continue;
+				}
+				clm.CellActivation = Infragistics.Win.UltraWinGrid.Activation.AllowEdit;
+			}
+			grdData.DisplayLayout. Bands[0].Columns["Calculated_Selected"].Header.Caption="";
+			grdData.DisplayLayout. Bands[0].Columns["Calculated_Selected"].Header.CheckBoxVisibility = HeaderCheckBoxVisibility.WhenUsingCheckEditor;
+			grdData.DisplayLayout. Bands[0].Columns["Calculated_Selected"].Header.CheckBoxAlignment = HeaderCheckBoxAlignment.Center;
+			grdData.DisplayLayout. Bands[0].Columns["Calculated_Selected"].Header.CheckBoxSynchronization = HeaderCheckBoxSynchronization.RowsCollection;
+			
+			grdData.DisplayLayout.Override.AllowRowFiltering = Infragistics.Win.DefaultableBoolean.True;
+	        grdData.DisplayLayout.Override.FilterUIType = Infragistics.Win.UltraWinGrid.FilterUIType.FilterRow;
+	        grdData.DisplayLayout.Override.FilterEvaluationTrigger = Infragistics.Win.UltraWinGrid.FilterEvaluationTrigger.OnLeaveCell;
+	        grdData.DisplayLayout.Override.FilterOperatorDefaultValue = Infragistics.Win.UltraWinGrid.FilterOperatorDefaultValue.Equals;
+	        grdData.DisplayLayout.Override.FilterOperatorLocation = Infragistics.Win.UltraWinGrid.FilterOperatorLocation.WithOperand;        
+        	grdData.DisplayLayout.Override.FilterClearButtonLocation = Infragistics.Win.UltraWinGrid.FilterClearButtonLocation.Row;	
+			
+			grdData.DisplayLayout.Bands[0].Columns["Calculated_Selected"].AllowRowFiltering = Infragistics.Win.DefaultableBoolean.False;	
+		}catch{}*/
+		DynamicQueryAdapter _baqAdapter = new DynamicQueryAdapter(oTrans);
+        _baqAdapter.BOConnect();
+        _baqAdapter.ExecuteByID("399999-DataTransf");
+        header.dataView.Table = _baqAdapter.QueryResults.Tables["Results"];
+        _baqAdapter.Dispose();
+		SetFilter();
+	}	
+
+	private DataTable GetData(string wh)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+        
+        Ice.BO.QueryExecutionDataSet dataset=new Ice.BO.QueryExecutionDataSet();
+
+        dataset.ExecutionParameter.AddExecutionParameterRow("Warehouse", wh, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        DataSet ds = querry.ExecuteByID("399999-DataTransf", dataset);
+        return ds.Tables[0];
+    }
+
+	private void btnLoad_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		LoadTransit();
+	}
+
+	/*private void LoadTransit()
+	{
+		try{	
+			grdTransit.DataSource=GetTransit();
+			foreach(var clm in grdTransit.DisplayLayout.Bands[0].Columns)
+			{
+				if(clm.Key!="Calculated_Selected" && clm.Key!="Calculated_TranQty")
+				{
+					clm.CellActivation = Infragistics.Win.UltraWinGrid.Activation.ActivateOnly;
+					continue;
+				}
+				clm.CellActivation = Infragistics.Win.UltraWinGrid.Activation.AllowEdit;
+			}
+			grdTransit.DisplayLayout. Bands[0].Columns["Calculated_Selected"].Header.Caption="";
+			grdTransit.DisplayLayout. Bands[0].Columns["Calculated_Selected"].Header.CheckBoxVisibility = HeaderCheckBoxVisibility.WhenUsingCheckEditor;
+			grdTransit.DisplayLayout. Bands[0].Columns["Calculated_Selected"].Header.CheckBoxAlignment = HeaderCheckBoxAlignment.Center;
+			grdTransit.DisplayLayout. Bands[0].Columns["Calculated_Selected"].Header.CheckBoxSynchronization = HeaderCheckBoxSynchronization.RowsCollection;
+			
+			grdTransit.DisplayLayout.Override.AllowRowFiltering = Infragistics.Win.DefaultableBoolean.True;
+	        grdTransit.DisplayLayout.Override.FilterUIType = Infragistics.Win.UltraWinGrid.FilterUIType.FilterRow;
+	        grdTransit.DisplayLayout.Override.FilterEvaluationTrigger = Infragistics.Win.UltraWinGrid.FilterEvaluationTrigger.OnLeaveCell;
+	        grdTransit.DisplayLayout.Override.FilterOperatorDefaultValue = Infragistics.Win.UltraWinGrid.FilterOperatorDefaultValue.Equals;
+	        grdTransit.DisplayLayout.Override.FilterOperatorLocation = Infragistics.Win.UltraWinGrid.FilterOperatorLocation.WithOperand;        
+        	grdTransit.DisplayLayout.Override.FilterClearButtonLocation = Infragistics.Win.UltraWinGrid.FilterClearButtonLocation.Row;	
+			
+			grdTransit.DisplayLayout.Bands[0].Columns["Calculated_Selected"].AllowRowFiltering = Infragistics.Win.DefaultableBoolean.False;	
+		}catch{}
+	}*/
+
+	/*private DataTable GetTransit()
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+        
+        Ice.BO.QueryExecutionDataSet dataset=new Ice.BO.QueryExecutionDataSet();        
+        DataSet ds = querry.ExecuteByID("AM-InTransit", dataset);
+        return ds.Tables[0];
+    }*/
+
+	private void btnReceipt_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		foreach(var row in grdTransit.Rows)
+		{
+			if (Convert.ToBoolean(row.Cells["Calculated_Selected"].Value)
+						&& Convert.ToDecimal(row.Cells["Calculated_TranQty"].Value) > Convert.ToDecimal(row.Cells["UD08_Number02"].Value))
+			{
+				MessageBox.Show("Receive Qty cannot be greater than In Transit Qty - Part: " + row.Cells["UD08_Key2"].Value.ToString());
+				return;
+			}
+		}
+		if(MessageBox.Show("Do you want to receive the selected items?","Confirm",MessageBoxButtons.YesNo)==DialogResult.Yes)
+		{
+			foreach(var row in grdTransit.Rows)
+			{	
+				if(Convert.ToBoolean(row.Cells["Calculated_Selected"].Value)
+						&& Convert.ToDecimal(row.Cells["Calculated_TranQty"].Value)>0)
+				{
+					try{
+						string partnum=row.Cells["UD08_Key2"].Value.ToString();
+						string towh=row.Cells["UD08_Key3"].Value.ToString();
+						string tobin=row.Cells["UD08_Key4"].Value.ToString();
+						string fromlot=row.Cells["UD08_ShortChar01"].Value.ToString();
+						string fromsn=row.Cells["UD08_ShortChar02"].Value.ToString();	
+						string uom=row.Cells["UD08_ShortChar03"].Value.ToString();
+						decimal qty=Convert.ToDecimal(row.Cells["Calculated_TranQty"].Value);
+
+						Receipt(partnum,uom,towh,tobin,fromlot,fromsn,qty);
+						ReceiptLog(row.Cells["UD08_Key1"].Value.ToString(),partnum,towh,tobin,qty);
+					}catch(Exception ex)
+					{}
+				}
+			}
+			MessageBox.Show("Proccess Done!");
+			LoadTransit();
+		}
+	}
+
+	private void ReceiptLog(string key1,string key2,string key3,string key4, decimal qty)
+	{
+		UD08Adapter UD08 = new UD08Adapter(this.oTrans);
+        UD08.BOConnect();
+
+		string whereClause = "Key1 = '" + key1 + "' And Key2 = '" + key2 + "' And Key3 = '" + key3 + "' And Key4 = '" + key4 + "'";
+        System.Collections.Hashtable whereClauses = new System.Collections.Hashtable(1);
+        whereClauses.Add("UD08", whereClause);
+        SearchOptions searchOptions = SearchOptions.CreateRuntimeSearch(whereClauses, DataSetMode.RowsDataSet);
+        UD08.InvokeSearch(searchOptions);
+        DataRow[] matchRow = UD08.UD08Data.UD08.Select(whereClause);
+		decimal transit = Convert.ToDecimal(matchRow[0]["Number02"]);
+		if (qty < transit)
+		{
+			matchRow[0]["Number02"] = transit - qty;
+			matchRow[0]["Date02"] = DateTime.Now.Date;
+		}
+		else
+		{
+			matchRow[0]["Number02"] = 0;
+			matchRow[0]["Date02"] = DateTime.Now.Date;
+			matchRow[0]["CheckBox01"] = true;
+		}
+        UD08.Update();
+        UD08.Dispose();
+	}
+
+//	private void Transit_BeforeCellUpdate(object sender, Infragistics.Win.UltraWinGrid.BeforeCellUpdateEventArgs e)
+//    {
+//        if (e.Cell.Column.Key == "Calculated_TranQty")
+//        {                
+//			if(e.Cell.Row.Cells["SerialNo_SerialNumber"].Value != null 
+//					&& !string.IsNullOrEmpty(e.Cell.Row.Cells["SerialNo_SerialNumber"].Value.ToString()))
+//			{	
+//            	e.Cancel = true;
+//				MessageBox.Show("Part with serialnumber only allow tranfer one by one!");
+//			}
+//			if(Convert.ToDecimal(e.NewValue)>Convert.ToDecimal(e.Cell.Row.Cells["PartBin_OnhandQty"].Value))
+//			{
+//				e.Cancel=true;
+//				MessageBox.Show("The quantity tranfer maximum equals onhand qty!");
+//			}
+//        }	
+//    }
+
+	private void Receipt(string partnum,string uom,string towh,string tobin,string fromlot,string fromsn,decimal qty)
+	{
+		string fromwh="02",frombin="Main";
+		Erp.Adapters.InvTransferAdapter adap = new Erp.Adapters.InvTransferAdapter(this.oTrans);	
+		adap.BOConnect();
+		bool rowAdded = false;
+		Erp.BO.InvTransferDataSet ds = adap.GetTransferRecord(new Guid("00000000-0000-0000-0000-000000000000"),partnum, "",uom,out rowAdded);	
+	    adap.InvTransferData.Clear();
+        adap.InvTransferData.Merge(ds);
+        adap.InvTransferData.AcceptChanges();	
+		var row=adap.InvTransferData.InvTrans[adap.InvTransferData.InvTrans.Rows.Count-1];
+		if(row!=null)
+		{
+			row.BeginEdit();
+			row["TransferQtyUOM"]=uom;
+			row.EndEdit();
+			adap.ChangeUOM();
+
+			row.BeginEdit();
+			row["FromWarehouseCode"]=fromwh;
+			row.EndEdit();
+			adap.ChangeFromWhse(fromwh);
+			
+			row.BeginEdit();
+			row["FromBinNum"]=frombin;
+			row.EndEdit();
+			adap.ChangeFromBin(frombin);
+			row.BeginEdit();
+			row["FromLotNumber"]=fromlot;
+			row.EndEdit();
+			row.BeginEdit();
+			row["ToLotNumber"]=fromlot;	
+			row.EndEdit();
+			string message = "";
+			adap.ChangeLot(fromlot,"", out message);	
+			//adap.ChangeLot(adap.InvTransferData);	
+			row.BeginEdit();
+			row["ToWarehouseCode"]=towh;
+			row.EndEdit();
+			adap.ChangeToWhse(towh);
+			row.BeginEdit();	
+			row["ToBinNum"]=tobin;
+			row.EndEdit();
+			adap.ChangeToBin(tobin);
+			
+			row["TransferQty"]=qty;		
+		}	
+		
+		if(fromsn!="")
+		{
+			Erp.Adapters.SelectedSerialNumbersAdapter snAdap = new Erp.Adapters.SelectedSerialNumbersAdapter(this.oTrans);
+			snAdap.BOConnect();
+            if(snAdap.GetSerialNumFormat(partnum,"","",0,(this.oTrans.Session as Ice.Core.Session).PlantID))
+            {
+                adap.InvTransferData.SNFormat.Merge(snAdap.SelectedSerialNumbersData.SNFormat);                
+				adap.InvTransferData.AcceptChanges();               
+				snAdap.Dispose();
+				snAdap=null;
+
+				//search serialno
+				Erp.Adapters.SerialNoAdapter snoAdap=new Erp.Adapters.SerialNoAdapter(this.oTrans);
+				snoAdap.BOConnect();
+				
+				string whereClause = "SerialNumber='"+fromsn+"' AND PartNum='"+partnum+"'";
+	            System.Collections.Hashtable whereClauses = new System.Collections.Hashtable(1);
+	            whereClauses.Add("SerialNo", whereClause);
+	            Ice.Lib.Searches.SearchOptions searchOptions = Ice.Lib.Searches.SearchOptions.CreateRuntimeSearch(whereClauses, Ice.Lib.Searches.DataSetMode.RowsDataSet);
+				bool flag1=false;
+	            var dsSN=snoAdap.GetRows(searchOptions, out flag1);
+
+				if(dsSN!=null && dsSN.Tables["SerialNo"].Rows.Count>0)
+				{
+					var snNew=adap.InvTransferData.SelectedSerialNumbers.NewSelectedSerialNumbersRow();
+					snNew.BeginEdit();
+					foreach(DataColumn clm in snNew.Table.Columns)
+					{
+						try{
+							snNew[clm.ColumnName]=dsSN.Tables["SerialNo"].Rows[0][clm.ColumnName];
+						}catch{}
+					}
+					snNew["RowMod"]="A";
+					snNew.Deselected = false;
+		            snNew.PreventDeselect = false;
+		            snNew.PreDeselected = false;
+		            snNew.NotSavedToDB = true;
+					snNew.EndEdit();
+					adap.InvTransferData.SelectedSerialNumbers.AddSelectedSerialNumbersRow(snNew);
+				}
+				snoAdap.Dispose();
+				snoAdap=null;
+				if(row!=null)
+				{
+					row.BeginEdit();
+					row["TrackingQty"]=qty;
+					row.EndEdit();
+				}
+            }
+		}	
+
+		
+		//adap.ChangeLot(adap.InvTransferData);
+		bool flag = false;
+        string msg = "", pks = "";	
+		adap.ChangeLot(fromlot,"", out msg);	
+        adap.PreCommitTransfer(out flag);
+        adap.CommitTransfer(out msg,out pks);
+
+		adap.Dispose();
+		adap=null;
+	}
+	private void SetFilter()
+	{
+		string FilterString = "";
+		if (epiTextBoxC1.Text != "")
+		{
+			FilterString += "Convert(Part_PartNum,'System.String') LIKE '*" + epiTextBoxC1.Text + "*' AND ";
+		}
+		if (cboFWH.Value != null)
+		{
+			FilterString += "PartBin_WarehouseCode = '" + cboFWH.Value.ToString() + "' AND ";
+		}
+		if (FilterString.Length > 5)
+		{
+        	header.dataView.RowFilter = FilterString.Substring(0, (FilterString.Length - 5));
+		}
+		else
+		{
+			header.dataView.RowFilter = "";
+		}
+	}
+	private void LoadDataTransfer()
+	{
+		 
+		DynamicQueryAdapter _baqAdapter = new DynamicQueryAdapter(oTrans);
+		_baqAdapter.BOConnect();
+		 
+		_baqAdapter.ExecuteByID("399999-DataTransf");
+
+		header = new EpiDataView();
+        header.dataView = new DataView(_baqAdapter.QueryResults.Tables["Results"]);
+		foreach (DataColumn dc in header.dataView.Table.Columns)
+        {
+
+            dc.ExtendedProperties["ReadOnly"] = true;
+
+            dc.ExtendedProperties["Like"] = dc.ColumnName.ToString();
+
+        }
+		if (header.dataView.Table.Columns.Contains("Calculated_Selected"))
+	    {
+	        header.dataView.Table.Columns["Calculated_Selected"].ExtendedProperties["ReadOnly"] = false;
+	    }
+		if (header.dataView.Table.Columns.Contains("Calculated_TranQty"))
+	    {
+	        header.dataView.Table.Columns["Calculated_TranQty"].ExtendedProperties["ReadOnly"] = false;
+	    }
+		if ((oTrans.EpiDataViews.ContainsKey("BAQheader") == false))
+        {
+
+            oTrans.Add("BAQheader",header);
+        }
+
+        _baqAdapter.Dispose();
+	}
+	
+	private void epiTextBoxC1_TextChanged(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		SetFilter();
+	}
+
+
+	private void cboFWH_ValueChanged(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		SetFilter();
+	}
+
+	private void LoadTransit()
+	{
+		grdTransit.DataSource=GetTransit();
+	}	
+
+	private void grdTransit_InitializeLayout(object sender, Infragistics.Win.UltraWinGrid.InitializeLayoutEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		foreach (UltraGridColumn dc in args.Layout.Bands[0].Columns)
+        {
+            dc.CellActivation = Infragistics.Win.UltraWinGrid.Activation.ActivateOnly;
+        }
+        args.Layout.Bands[0].Columns["Calculated_Selected"].CellActivation = Infragistics.Win.UltraWinGrid.Activation.AllowEdit;
+        args.Layout.Bands[0].Columns["Calculated_TranQty"].CellActivation = Infragistics.Win.UltraWinGrid.Activation.AllowEdit;
+        args.Layout.Bands[0].Columns["Calculated_TranQty"].Format = "##,###,###,##0.00";
+        args.Layout.Bands[0].Columns["UD08_Number01"].Format = "##,###,###,##0.00";
+		args.Layout.Bands[0].Columns["UD08_Number02"].Format = "##,###,###,##0.00";
+		args.Layout.Bands[0].Columns["UD08_Key1"].Hidden = true;	
+	}
+
+	private DataTable GetTransit()
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+        
+        Ice.BO.QueryExecutionDataSet dataset=new Ice.BO.QueryExecutionDataSet();        
+        DataSet ds = querry.ExecuteByID("399999-InTransit", dataset);
+        return ds.Tables[0];
+    }
+
+	private DataTable GetTransitLog()
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+        
+        Ice.BO.QueryExecutionDataSet dataset=new Ice.BO.QueryExecutionDataSet();        
+        DataSet ds = querry.ExecuteByID("399999-TransitLog", dataset);
+        return ds.Tables[0];
+    }
+
+	private void grdData_InitializeLayout(object sender, Infragistics.Win.UltraWinGrid.InitializeLayoutEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+	}
+
+	private void epiUltraGridC1_InitializeLayout(object sender, Infragistics.Win.UltraWinGrid.InitializeLayoutEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		foreach (UltraGridColumn dc in args.Layout.Bands[0].Columns)
+        {
+            dc.CellActivation = Infragistics.Win.UltraWinGrid.Activation.ActivateOnly;
+        }
+        args.Layout.Bands[0].Columns["UD08_Number01"].Format = "##,###,###,##0.00";
+		args.Layout.Bands[0].Columns["UD08_Number02"].Format = "##,###,###,##0.00";
+	}
+
+	private void epiButtonC1_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		epiUltraGridC1.DataSource = GetTransitLog();
+	}
+}
+
+
+
+// Excel
+Infragistics4.Documents.Excel.v12.2
+using Infragistics.Documents.Excel;
+using System.IO;
+private void btnFile_Click(object sender, System.EventArgs args)
+{
+    // * Place Event Handling Code Here *
+    OpenFileDialog ofd = new OpenFileDialog();
+    ofd.InitialDirectory = @"C:\";
+    ofd.Filter = "Excel Files|.xls;.xlsx|CSV files (.csv)|.csv";
+    if(ofd.ShowDialog() == DialogResult.OK)
+    {
+        txtFile.Text = ofd.FileName;
+    }
+}
+
+private void LoadGridFromExcel(string filename)
+{
+    if(this.edvUpdateUnitPriceSO.dataView.Count > 0)
+    {
+        Workbook workbook = Workbook.Load(filename);
+        Worksheet worksheet = workbook.Worksheets[0];
+        if(worksheet != null)
+        {
+            foreach (WorksheetRow row in worksheet.Rows)
+            {
+                if(row.Index > 0)
+                {
+                    try
+                    {
+                        DataRow[] array = this.edvUpdateUnitPriceSO.dataView.Table.Select("OrderHed_Company = '" + row.GetCellValue(0).ToString() + "' AND OrderHed_OrderNum = " + Convert.ToInt32(row.GetCellValue(1)) + " AND OrderDtl_OrderLine = " + Convert.ToInt32(row.GetCellValue(8)));
+                
+                        if(array.Length > 0)
+                        {
+                            DataRow eRow = array[0];
+                            if(!String.IsNullOrEmpty(row.GetCellValue(11).ToString()))
+                            {
+                                eRow.BeginEdit();
+                                eRow["OrderDtl_XPartNum"] = row.GetCellValue(11).ToString();
+                                eRow.EndEdit();
+                            }
+                            if(eRow["OrderDtl_KitFlag"].ToString() == "P")
+                            {
+                                eRow.BeginEdit();
+                                eRow["OrderDtl_ParentPricing_c"] = Convert.ToDecimal(row.GetCellValue(15));
+                                eRow.EndEdit();
+                            }
+                            else
+                            {
+                                eRow.BeginEdit();
+                                eRow["OrderDtl_DocUnitPrice"] = Convert.ToDecimal(row.GetCellValue(14));
+                                eRow.EndEdit();
+                            }
+							eRow["OrderNum"] = Convert.ToInt32(row.GetCellValue(0));
+							eRow["OrderLine"] = Convert.ToInt32(row.GetCellValue(0).ToString());
+							eRow["PartNum"] = row.GetCellValue(0).ToString();
+							eRow["LineDesc"] = row.GetCellValue(0).ToString();
+							eRow["DocUnitPrice"] =  Convert.ToDecimal(row.GetCellValue(0));
+							eRow["ProdCode"] = row.GetCellValue(0).ToString();
+							eRow["SellingQuantity"] =  Convert.ToDecimal(row.GetCellValue(0));
+							eRow["IUM"] = row.GetCellValue(0).ToString();
+							eRow["SalesUM"] = row.GetCellValue(0).ToString();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        
+                    }
+                }
+            }
+        }
+    }
+}
+
+WhseBinAdapter adapter = new WhseBinAdapter(this.oTrans);
+adapter.BOConnect();
+bool morePages;
+string whereClause = "WarehouseCode = '" + edvUD106ARow["ShortChar06"].ToString() + "' AND BinNum = '" + txtFromBinNum.Text + "'";
+SearchOptions opts = new SearchOptions(SearchMode.AutoSearch);
+opts.PageSize = 0;
+opts.NamedSearch.WhereClauses.Add("WhseBin",whereClause);
+DataSet dsWhseBinAdapter = adapter.GetRows(opts,out morePages);
+if(dsWhseBinAdapter.Tables[0].Rows.Count > 0)
+{}
+
+// **************************************************
+// Custom code for VendorForm
+// Created: 11/8/2021 10:25:55 AM
+// **************************************************
+
+extern alias Erp_Contracts_BO_Vendor;
+extern alias Erp_Contracts_BO_APInvoice;
+extern alias Erp_Contracts_BO_LogAPInv;
+extern alias Erp_Contracts_BO_APPromissoryNotes;
+extern alias Erp_Contracts_BO_Company;
+extern alias Erp_Contracts_BO_Customer;
+extern alias Erp_Contracts_BO_PaymentEntry;
+extern alias Erp_Adapters_Vendor;
+extern alias Erp_Adapters_VendGrup;
+extern alias Erp_Contracts_BO_VendGrup;
+extern alias Ice_Contracts_BO_DynamicQuery;
+
+using System;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Windows.Forms;
+using Erp.Adapters;
+using Erp.UI;
+using Ice.Lib;
+using Ice.Adapters;
+using Ice.Lib.Customization;
+using Ice.Lib.ExtendedProps;
+using Ice.Lib.Framework;
+using Ice.Lib.Searches;
+using Ice.UI.FormFunctions;
+
+public class Script
+{
+	// ** Wizard Insert Location - Do Not Remove 'Begin/End Wizard Added Module Level Variables' Comments! **
+	// Begin Wizard Added Module Level Variables **
+
+	//private VendorAdapter oTrans_vendorAdapter;
+	private Ice.Lib.Framework.EpiTextBox txtVendID;
+	private VendorAdapter oTrans_vendorAdapter;
+	bool addVendor = false;
+	//private EpiBaseAdapter oTrans_vendorAdapter;
+	// End Wizard Added Module Level Variables **
+
+	// Add Custom Module Level Variables Here **
+
+	public void InitializeCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Variable Initialization' lines **
+		// Begin Wizard Added Variable Initialization
+		this.txtVendID = (EpiTextBox)csm.GetNativeControlReference("4ce376bb-225b-4b04-ac18-0c6bdc69820b");
+		this.oTrans_vendorAdapter = ((VendorAdapter)(this.csm.TransAdaptersHT["oTrans_vendorAdapter"]));
+		this.oTrans_vendorAdapter.AfterAdapterMethod += new AfterAdapterMethod(this.oTrans_vendorAdapter_AfterAdapterMethod);
+		this.Vendor_Column.ColumnChanged += new DataColumnChangeEventHandler(this.Vendor_AfterFieldChange);
+		
+		// End Wizard Added Variable Initialization
+
+		// Begin Wizard Added Custom Method Calls
+
+		this.btnNext.Click += new System.EventHandler(this.btnNext_Click);
+		CreateRowRuleVendorDetailVendorNumEquals_0();
+
+		this.txtVendID.Validating += new System.ComponentModel.CancelEventHandler(this.txtVendID_Validating);
+		// End Wizard Added Custom Method Calls
+	}
+
+	public void DestroyCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Object Disposal' lines **
+		// Begin Wizard Added Object Disposal
+
+		this.btnNext.Click -= new System.EventHandler(this.btnNext_Click);
+		this.oTrans_vendorAdapter.AfterAdapterMethod -= new AfterAdapterMethod(this.oTrans_vendorAdapter_AfterAdapterMethod);
+		this.oTrans_vendorAdapter = null;
+		this.Vendor_Column.ColumnChanged -= new DataColumnChangeEventHandler(this.Vendor_AfterFieldChange);
+		
+
+		this.txtVendID.Validating -= new System.ComponentModel.CancelEventHandler(this.txtVendID_Validating);
+		// End Wizard Added Object Disposal
+
+		// Begin Custom Code Disposal
+
+		// End Custom Code Disposal
+	}
+	
+	private void CreateRowRuleVendorDetailVendorNumEquals_0()
+	{
+		// Description: AddVendor
+		// **** begin autogenerated code ****
+		RuleAction disabledVendorDetail_VendorID = RuleAction.AddControlSettings(this.oTrans, "VendorDetail.VendorID", SettingStyle.Disabled);
+		RuleAction[] ruleActions = new RuleAction[] {
+				disabledVendorDetail_VendorID };
+		// Create RowRule and add to the EpiDataView.
+		RowRule rrCreateRowRuleVendorDetailVendorNumEquals_0 = new RowRule("VendorDetail.VendorNum", RuleCondition.Equals, 0, ruleActions);
+		((EpiDataView)(this.oTrans.EpiDataViews["VendorDetail"])).AddRowRule(rrCreateRowRuleVendorDetailVendorNumEquals_0);
+
+		RuleAction disabledVendorDetail_btnNext = RuleAction.AddControlSettings(this.oTrans, "VendorDetail.btnNext", SettingStyle.Disabled);
+		RuleAction[] ruleActions01 = new RuleAction[] {
+				disabledVendorDetail_btnNext };
+		// Create RowRule and add to the EpiDataView.
+		RowRule rrCreateRowRuleVendorDetailVendorNumNotEqual_0 = new RowRule("VendorDetail.VendorNum", RuleCondition.NotEqual, 0, ruleActions01);
+		((EpiDataView)(this.oTrans.EpiDataViews["VendorDetail"])).AddRowRule(rrCreateRowRuleVendorDetailVendorNumNotEqual_0);
+		// **** end autogenerated code ****
+	}
+
+	private void btnNext_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		EpiDataView edvCallContextBpmData = ((EpiDataView)(this.oTrans.EpiDataViews["CallContextBpmData"]));
+		System.Data.DataRow edvCallContextBpmData_Row = edvCallContextBpmData.CurrentDataRow;
+	    if ((edvCallContextBpmData_Row != null))
+	    {	
+			if(!string.IsNullOrEmpty(edvCallContextBpmData_Row["ShortChar01"].ToString()))
+			{
+				EpiDataView edvVendorDetail = ((EpiDataView)(this.oTrans.EpiDataViews["VendorDetail"]));
+				System.Data.DataRow edvVendorDetail_Row = edvVendorDetail.CurrentDataRow;
+			    if ((edvVendorDetail_Row != null))
+			    {				
+					edvVendorDetail_Row.BeginEdit();
+				    edvVendorDetail_Row["GroupCode"] = edvCallContextBpmData_Row["ShortChar01"];
+					
+					DataTable tbl = GetLastSupplierID(edvCallContextBpmData_Row["ShortChar01"].ToString());
+					if(tbl.Rows.Count > 0)
+					{
+						DataRow rowLastSupplierID = tbl.Rows[0];
+				        edvVendorDetail_Row["VendorID"] = rowLastSupplierID["Calculated_ValidVendorID"];
+					}
+					else
+					{
+				        edvVendorDetail_Row["VendorID"] = edvCallContextBpmData_Row["ShortChar01"].ToString() + "0000" ;
+				        
+					}
+			        edvVendorDetail_Row.EndEdit();	
+					    
+			    }
+				edvCallContextBpmData_Row.BeginEdit();
+				edvCallContextBpmData_Row["ShortChar01"]= string.Empty;
+				edvCallContextBpmData_Row.EndEdit();
+				edvVendorDetail.Notify(new EpiNotifyArgs(this.oTrans, edvVendorDetail.Row, edvVendorDetail.Column));  
+				edvCallContextBpmData.Notify(new EpiNotifyArgs(this.oTrans, edvCallContextBpmData.Row, edvCallContextBpmData.Column));  
+			}
+		}
+	}
+
+	private DataTable GetLastSupplierID(string userCode)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+		dataset.ExecutionParameter.AddExecutionParameterRow("CodeID", userCode, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        DataSet ds = querry.ExecuteByID("DVTLastSupplierID", dataset);
+        return ds.Tables[0];
+    }
+
+
+	private void oTrans_vendorAdapter_AfterAdapterMethod(object sender, AfterAdapterMethodArgs args)
+	{
+		// ** Argument Properties and Uses **
+		// ** args.MethodName **
+		// ** Add Event Handler Code **
+
+		// ** Use MessageBox to find adapter method name
+		EpiMessageBox.Show(args.MethodName);
+		
+		switch (args.MethodName)
+		{
+			case "GetNewEntityGLC":
+				
+					if(Convert.ToBoolean(addVendor))
+					{
+						addVendor = false;
+						cboGenVendorID.Enabled = false;
+						EpiDataView edvVendorDetail = ((EpiDataView)(this.oTrans.EpiDataViews["VendorDetail"]));
+						System.Data.DataRow edvVendorDetail_Row = edvVendorDetail.CurrentDataRow;
+					    if ((edvVendorDetail_Row != null))
+					    {
+							if(!string.IsNullOrEmpty(edvVendorDetail_Row["GroupCode"].ToString()))
+							{
+								VendGrupAdapter vendGrpAdap  = new VendGrupAdapter(this.oTrans);
+								vendGrpAdap.BOConnect();
+								string whereClause = "Company = '"+(this.oTrans.Session as Ice.Core.Session).CompanyID + "' AND GroupCode = '" +  edvVendorDetail_Row["GroupCode"].ToString() + "'" ;
+								System.Collections.Hashtable whereClauses = new System.Collections.Hashtable(1);
+								whereClauses.Add("VendGrup", whereClause);
+								SearchOptions searchOptions = SearchOptions.CreateRuntimeSearch(whereClauses, DataSetMode.RowsDataSet);
+								vendGrpAdap.InvokeSearch(searchOptions);
+								if(vendGrpAdap.VendGrupData.VendGrup.Rows.Count > 0)
+								{
+									DataRow rowVendGrup = vendGrpAdap.VendGrupData.VendGrup.Rows[0];
+									if(!string.IsNullOrEmpty(rowVendGrup["GLControlType_c"].ToString()) || !string.IsNullOrEmpty(rowVendGrup["GLControlCode_c"].ToString()))
+									{
+										if(this.oTrans_vendorAdapter.GetNewEntityGLC("Vendor",edvVendorDetail_Row["VendorNum"].ToString(),"","","","",""))
+										{
+											
+											int rowCount = this.oTrans_vendorAdapter.VendorData.EntityGLC.Rows.Count;
+											edvVendorDetail.Notify(new EpiNotifyArgs(this.oTrans, (rowCount -1), EpiTransaction.NotifyType.AddRow));
+											DataRow editRow = this.oTrans_vendorAdapter.VendorData.EntityGLC.Rows[(rowCount -1)];
+											if(editRow != null)
+											{
+												editRow.BeginEdit();
+												editRow["Company"] = (this.oTrans.Session as Ice.Core.Session).CompanyID;
+												editRow["RelatedToFile"] = "Vendor";
+												editRow["Key1"] = int.Parse(edvVendorDetail_Row["VendorNum"].ToString());
+												editRow["GLControlType"] = rowVendGrup["GLControlType_c"];
+												editRow["GLControlCode"] = rowVendGrup["GLControlCode_c"];
+												editRow["BusinessEntity"] = "Vendor";
+												editRow.EndEdit();
+												this.oTrans_vendorAdapter.Update();
+												edvVendorDetail.Notify(new EpiNotifyArgs(this.oTrans, edvVendorDetail.Row, edvVendorDetail.Column));
+												
+											}
+											
+										}
+									}
+								}
+								vendGrpAdap.Dispose();
+							}
+						}
+					}
+
+				break;
+			case "GetNewVendor":				
+				addVendor = true;
+				cboGenVendorID.Enabled = true;
+				break;
+		}
+
+	}
+
+	private void Vendor_AfterFieldChange(object sender, DataColumnChangeEventArgs args)
+	{
+		// ** Argument Properties and Uses **
+		// args.Row["FieldName"]
+		// args.Column, args.ProposedValue, args.Row
+		// Add Event Handler Code
+		switch (args.Column.ColumnName)
+		{
+			case "GroupCode":
+				if(Convert.ToInt32(args.Row["VendorNum"]) > 0)
+				{
+					SetGLControl(args.Row["GroupCode"].ToString());
+				}
+				break;
+		}
+	}
+
+	private void SetGLControl(string vendorGrp)
+	{
+		EpiDataView edvVendorDetail = ((EpiDataView)(this.oTrans.EpiDataViews["VendorDetail"]));
+		EpiDataView edvEntityGLC = ((EpiDataView)(this.oTrans.EpiDataViews["EntityGLC"]));
+		System.Data.DataRow edvVendorDetailRow = edvVendorDetail.CurrentDataRow;
+		
+		if ((edvVendorDetailRow != null))
+		{
+			if(this.oTrans_vendorAdapter.VendorData.EntityGLC.Rows.Count > 0)
+			{
+				try
+				{
+					for (int i = 0; (i < this.oTrans_vendorAdapter.VendorData.EntityGLC.Rows.Count); i = (i + 1))
+					{
+						this.oTrans_vendorAdapter.VendorData.EntityGLC.Rows[0].Delete();
+						this.oTrans_vendorAdapter.Update();
+					}
+					edvEntityGLC.Notify(new EpiNotifyArgs(this.oTrans, edvEntityGLC.Row, edvEntityGLC.Column));
+				}
+				catch ( )
+				{
+				}
+			}
+			if(!string.IsNullOrEmpty(vendorGrp))
+			{
+				VendGrupAdapter vendGrpAdap  = new VendGrupAdapter(this.oTrans);
+				vendGrpAdap.BOConnect();
+				string whereClause = "Company = '"+(this.oTrans.Session as Ice.Core.Session).CompanyID + "' AND GroupCode = '" +  vendorGrp + "'" ;
+				System.Collections.Hashtable whereClauses = new System.Collections.Hashtable(1);
+				whereClauses.Add("VendGrup", whereClause);
+				SearchOptions searchOptions = SearchOptions.CreateRuntimeSearch(whereClauses, DataSetMode.RowsDataSet);
+				vendGrpAdap.InvokeSearch(searchOptions);
+				if(vendGrpAdap.VendGrupData.VendGrup.Rows.Count > 0)
+				{
+					DataRow rowVendGrup = vendGrpAdap.VendGrupData.VendGrup.Rows[0];
+					if(!string.IsNullOrEmpty(rowVendGrup["GLControlType_c"].ToString()) || !string.IsNullOrEmpty(rowVendGrup["GLControlCode_c"].ToString()))
+					{
+						if(this.oTrans_vendorAdapter.GetNewEntityGLC("Vendor",edvVendorDetailRow["VendorNum"].ToString(),"","","","",""))
+						{
+							
+							int rowCount = this.oTrans_vendorAdapter.VendorData.EntityGLC.Rows.Count;
+							edvEntityGLC.Notify(new EpiNotifyArgs(this.oTrans, (rowCount -1), EpiTransaction.NotifyType.AddRow));
+							DataRow editRow = this.oTrans_vendorAdapter.VendorData.EntityGLC.Rows[(rowCount -1)];
+							editRow.BeginEdit();
+							editRow["Company"] = (this.oTrans.Session as Ice.Core.Session).CompanyID;
+							editRow["RelatedToFile"] = "Vendor";
+							editRow["Key1"] = int.Parse(edvVendorDetailRow["VendorNum"].ToString());
+							editRow["GLControlType"] = rowVendGrup["GLControlType_c"];
+							editRow["GLControlCode"] = rowVendGrup["GLControlCode_c"];
+							editRow["BusinessEntity"] = "Vendor";
+							editRow.EndEdit();
+							this.oTrans_vendorAdapter.Update();
+							edvEntityGLC.Notify(new EpiNotifyArgs(this.oTrans, edvEntityGLC.Row, edvEntityGLC.Column));
+						}
+					}
+				}
+			}
+		}
+	}
+
+
+	private void txtVendID_Validating(object sender, System.ComponentModel.CancelEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		if(!string.IsNullOrEmpty(txtVendID.Text))
+		{
+			if(!this.oTrans.GetByVendID(txtVendID.Text))
+			{		
+				txtVendID.Text = string.Empty;
+				this.oTrans.KeyField  = string.Empty;
+			}
+		}
+	}
+
+	private void VendorForm_Load(object sender, EventArgs args)
+	{
+		// Add Event Handler Code
+		baseToolbarsManager.Tools["EpiAddNewNewEntityGLC"].SharedProps.Visible = false;
+	}
+}
+
+
+// **************************************************
+// Custom code for UD01Form
+// Created: 30/06/2022 8:47:32 a.m.
+// **************************************************
+
+
+using System;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Windows.Forms;
+using Ice.BO;
+using Ice.UI;
+using Ice.Lib;
+using Ice.Adapters;
+using Ice.Lib.Customization;
+using Ice.Lib.ExtendedProps;
+using Ice.Lib.Framework;
+using Ice.Lib.Searches;
+using Ice.UI.FormFunctions;
+using Ice.Core;
+using Erp.Adapters;
+
+public class Script
+{
+	// ** Wizard Insert Location - Do Not Remove 'Begin/End Wizard Added Module Level Variables' Comments! **
+	// Begin Wizard Added Module Level Variables **
+	int vendorNum = 0;
+	string purPoint = "";
+	string packSlip = "";
+	// End Wizard Added Module Level Variables **
+	
+	// Add Custom Module Level Variables Here **
+
+
+	public void InitializeCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Variable Initialization' lines **
+		// Begin Wizard Added Variable Initialization
+		
+		// End Wizard Added Variable Initialization
+
+		// Begin Wizard Added Custom Method Calls
+
+		this.epiButtonC2.Click += new System.EventHandler(this.epiButtonC2_Click);
+		this.epiButtonC4.Click += new System.EventHandler(this.epiButtonC4_Click);
+		this.epiButtonC3.Click += new System.EventHandler(this.epiButtonC3_Click);
+		this.epiButtonC1.Click += new System.EventHandler(this.epiButtonC1_Click);
+		// End Wizard Added Custom Method Calls
+	}
+
+	public void DestroyCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Object Disposal' lines **
+		// Begin Wizard Added Object Disposal
+
+		this.epiButtonC2.Click -= new System.EventHandler(this.epiButtonC2_Click);
+		this.epiButtonC4.Click -= new System.EventHandler(this.epiButtonC4_Click);
+		this.epiButtonC3.Click -= new System.EventHandler(this.epiButtonC3_Click);
+		this.epiButtonC1.Click -= new System.EventHandler(this.epiButtonC1_Click);
+		// End Wizard Added Object Disposal
+
+		// Begin Custom Code Disposal
+
+		// End Custom Code Disposal
+	}
+
+	private void SearchOnPOAdapterShowDialog()
+	{
+		// Wizard Generated Search Method
+		// You will need to call this method from another method in custom code
+		// For example, [Form]_Load or [Button]_Click
+
+		bool recSelected;
+		string whereClause = string.Empty;
+		System.Data.DataSet dsPOAdapter = Ice.UI.FormFunctions.SearchFunctions.listLookup(this.oTrans, "POAdapter", out recSelected, true, whereClause);
+		if (recSelected)
+		{
+			System.Data.DataRow adapterRow = dsPOAdapter.Tables[0].Rows[0];
+
+			// Map Search Fields to Application Fields
+			epiTextBoxC1.Text = adapterRow["PONum"].ToString();
+		}
+	}
+
+	private void SearchOnPORelSearchAdapterShowDialog()
+	{
+		// Wizard Generated Search Method
+		// You will need to call this method from another method in custom code
+		// For example, [Form]_Load or [Button]_Click
+
+		bool recSelected;
+		string whereClause = "PONum = " + Convert.ToInt32(epiTextBoxC1.Text);
+		System.Data.DataSet dsPORelSearchAdapter = Ice.UI.FormFunctions.SearchFunctions.listLookup(this.oTrans, "PORelSearchAdapter", out recSelected, true, whereClause);
+		if (recSelected)
+		{
+			System.Data.DataRow adapterRow = dsPORelSearchAdapter.Tables[0].Rows[0];
+
+			// Map Search Fields to Application Fields
+			epiTextBoxC2.Text = adapterRow["POLine"].ToString();
+			epiTextBoxC3.Text = adapterRow["PORelNum"].ToString();
+			epiTextBoxC4.Text = adapterRow["POLinePartNum"].ToString();
+			epiTextBoxC5.Text = adapterRow["POLineLineDesc"].ToString();
+			epiTextBoxC7.Text = adapterRow["PUM"].ToString();
+			epiUltraComboC1.Value = adapterRow["PUM"].ToString();
+
+			//epiTextBoxC10.Text = adapterRow["PUM"].ToString();
+			epiTextBoxC11.Text = adapterRow["PUM"].ToString();
+			//epiTextBoxC13.Text = adapterRow["PUM"].ToString();		
+			epiNumericEditorC1.Value = Convert.ToDecimal(adapterRow["XRelQty"]);
+			//epiNumericEditorC2.Value = adapterRow["PORelNum"].ToString();
+			DataTable tbl = SearchPartUOM(epiTextBoxC4.Text);
+			//MessageBox.Show(adapterRow["WarehouseCode"].ToString()); 
+			epiComboC1.Value = adapterRow["WarehouseCode"].ToString();
+			epiComboC1.Text = adapterRow["WarehouseCodeDescription"].ToString();
+			//epiComboC2.Value = epiComboC2.Text = adapterRow["BinNum"].ToString();
+			epiComboC2.Value = epiComboC2.Text = "00-00-04";
+			//Erp.Adapters.ReceiptAdapter _RAdapter = new Erp.Adapters.ReceiptAdapter(this.oTrans);
+			ReceiptAdapter _RAdapter = new ReceiptAdapter(oTrans);
+			_RAdapter.BOConnect();	
+			_RAdapter.GetByID(vendorNum, purPoint, packSlip);
+			//DataSet ds = _RAdapter.ReceiptData;
+			_RAdapter.GetNewRcvDtl(vendorNum, purPoint, packSlip);
+			 int rowCount = _RAdapter.ReceiptData.RcvDtl.Rows.Count;
+	        DataRow editRow = _RAdapter.ReceiptData.RcvDtl.Rows[(rowCount - 1)];
+	        editRow.BeginEdit();
+			editRow["PartNum"] = epiTextBoxC4.Text;
+			editRow["POLine"] = 1;
+			editRow["PORelNum"] = 1;
+			editRow["InputOurQty"] = 1;
+			editRow["IUM"] = "EA";
+			editRow["VendorQty"] = 1;
+			editRow["PUM"] = "EA";
+			
+			string serialWarning  ="";
+			_RAdapter.GetDtlPOLineInfo(vendorNum, purPoint, packSlip, 0, Convert.ToInt32(epiTextBoxC2.Text), out serialWarning);
+			//DataRow drRcvHead = _RAdapter.ReceiptData.RcvHead.Rows[0];
+			int count = _RAdapter.ReceiptData.RcvDtl.Rows.Count;
+        	DataRow drRcvHead = _RAdapter.ReceiptData.RcvDtl.Rows[(count - 1)];
+			epiComboC2.Value = drRcvHead["BinNum"];
+			epiComboC2.Text = drRcvHead["BinNum"].ToString();
+			editRow["LotNum"] = "20220714-0000001";
+			editRow["WareHouseCode"] =drRcvHead["WarehouseCode"];
+			editRow["BinNum"] =drRcvHead["BinNum"];
+	        editRow.EndEdit();
+			 _RAdapter.Update();
+			_RAdapter.Dispose();
+			if(tbl != null && tbl.Rows.Count > 0)
+			{
+				epiUltraComboC1.DataSource = tbl;
+				epiUltraComboC1.DisplayMember = "UOMConv_UOMcode";
+		        epiUltraComboC1.ValueMember = "UOMConv_UOMCode";
+		        epiUltraComboC1.DataBind();
+				epiUltraComboC1.DropDownWidth = 200;
+			}
+		}
+		
+	}
+
+	private void epiButtonC2_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		SearchOnPORelSearchAdapterShowDialog();
+	}
+
+	private void epiButtonC4_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+	}
+
+	private void epiButtonC3_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		int numLine = 0;
+		numLine = Convert.ToInt32(epiNumericEditorC1.Value) / Convert.ToInt32(epiNumericEditorC2.Value);
+		MessageBox.Show(numLine.ToString());
+	}
+
+	private void epiButtonC1_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		SearchOnPOAdapterShowDialog();
+	}
+
+	private DataTable SearchPartUOM(string partNum)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+		dataset.ExecutionParameter.AddExecutionParameterRow("PartNum", partNum, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");        
+        DataSet ds = querry.ExecuteByID("Filmquest_PartUOM", dataset);
+        return ds.Tables[0];
+    }
+
+	private void UD01Form_Load(object sender, EventArgs args)
+	{
+		
+		string[] rcv = UD01Form.LaunchFormOptions.ValueIn.ToString().Split('\n');
+		MessageBox.Show(UD01Form.LaunchFormOptions.ValueIn.ToString());
+		string[] fields = UD01Form.LaunchFormOptions.ValueIn.ToString().Split('~');
+
+    	this.epiTextBoxC14.Text = fields[2];
+		this.epiTextBoxC1.Text = fields[3];
+		packSlip = fields[2];
+		purPoint = fields[1];
+		vendorNum = Convert.ToInt32(fields[0]);
+	}
+}
+
+
+
+
+
+
+PopupMenuTool menuGrouActionTool;
+					menuGrouActionTool = (PopupMenuTool)baseToolbarsManager.Tools["NewMenuTool"];//Chú ý GroupTool là name của menu Group debug hoặc dùng message show để lấy đc thông tin này
+					//bổ sung menu Approved
+					ButtonTool newReceoptLine = new ButtonTool("NewMassReceiptLine");
+			        newReceoptLine.SharedProps.Caption = "New Mass Receipt Line"; // Sets the visible name
+			        newReceoptLine.SharedProps.DisplayStyle = ToolDisplayStyle.ImageAndText;
+			        newReceoptLine.SharedProps.AppearancesSmall.Appearance.Image = EpiUIImages.GetImage("New"); // Item name from the resource
+			        baseToolbarsManager.Tools.Add(newReceoptLine);
+					menuGrouActionTool.Tools.AddTool("NewMassReceiptLine");
+
+			string key = "";
+			EpiDataView edvRcvHead = (EpiDataView)(oTrans.EpiDataViews["RcvHead"]);
+			System.Data.DataRow edvheadViewRow = edvRcvHead.CurrentDataRow;
+			int vendorNum = Convert.ToInt32(edvRcvHead.dataView[edvRcvHead.Row]["VendorNum"]);
+			String purPoint = edvRcvHead.dataView[edvRcvHead.Row]["PurPoint"].ToString();
+			String pSlip = edvRcvHead.dataView[edvRcvHead.Row]["PackSlip"].ToString();
+            int pONum = Convert.ToInt32(edvRcvHead.dataView[edvRcvHead.Row]["PONum"]);
+			key = vendorNum.ToString() + "~" + purPoint + "~" + pSlip + "~" + pONum.ToString();
+			if(key != "")
+			{
+				LaunchFormOptions launchObject = new LaunchFormOptions();           
+		        launchObject.ValueIn = key.ToString();
+				launchObject.IsModal = true;
+	            ProcessCaller.LaunchForm(oTrans, "IMGO3333", launchObject);
+			}
+
+epiComboC1.SearchFilter = "WarehouseCode = '{0}' ", wh;
+
+// **************************************************
+// Custom code for UD01Form
+// Created: 30/06/2022 8:47:32 a.m.
+// **************************************************
+
+
+using System;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Windows.Forms;
+using Ice.BO;
+using Ice.UI;
+using Ice.Lib;
+using Ice.Adapters;
+using Ice.Lib.Customization;
+using Ice.Lib.ExtendedProps;
+using Ice.Lib.Framework;
+using Ice.Lib.Searches;
+using Ice.UI.FormFunctions;
+using Ice.Core;
+using Erp.Adapters;
+using System.Reflection;
+
+public class Script
+{
+	// ** Wizard Insert Location - Do Not Remove 'Begin/End Wizard Added Module Level Variables' Comments! **
+	// Begin Wizard Added Module Level Variables **
+	int vendorNum = 0;
+	string purPoint = "";
+	string packSlip = "";
+	string lotNum = "";
+	string wh = "";
+	bool isTrackLots = false;
+	Infragistics.Win.UltraWinDock.UltraDockManager dock;
+	// End Wizard Added Module Level Variables **
+	
+	// Add Custom Module Level Variables Here **
+
+
+	public void InitializeCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Variable Initialization' lines **
+		// Begin Wizard Added Variable Initialization
+		
+		// End Wizard Added Variable Initialization
+
+		// Begin Wizard Added Custom Method Calls
+
+		this.epiButtonC2.Click += new System.EventHandler(this.epiButtonC2_Click);
+		this.epiButtonC4.Click += new System.EventHandler(this.epiButtonC4_Click);
+		this.epiButtonC3.Click += new System.EventHandler(this.epiButtonC3_Click);
+		this.epiButtonC1.Click += new System.EventHandler(this.epiButtonC1_Click);
+		this.epiComboC1.ValueChanged += new System.EventHandler(this.epiComboC1_ValueChanged);
+		Object obj = typeof(Ice.UI.App.UD01Entry.UD01Form).InvokeMember("baseDockManager", BindingFlags.Instance | BindingFlags.GetField | BindingFlags.NonPublic, null, UD01Form, null);
+        dock =  (Infragistics.Win.UltraWinDock.UltraDockManager)obj;                  
+        dock.DockAreas[0].Panes[0].Closed = true;
+		// End Wizard Added Custom Method Calls
+	}
+
+	public void DestroyCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Object Disposal' lines **
+		// Begin Wizard Added Object Disposal
+
+		this.epiButtonC2.Click -= new System.EventHandler(this.epiButtonC2_Click);
+		this.epiButtonC4.Click -= new System.EventHandler(this.epiButtonC4_Click);
+		this.epiButtonC3.Click -= new System.EventHandler(this.epiButtonC3_Click);
+		this.epiButtonC1.Click -= new System.EventHandler(this.epiButtonC1_Click);
+		this.epiComboC1.ValueChanged -= new System.EventHandler(this.epiComboC1_ValueChanged);
+		// End Wizard Added Object Disposal
+
+		// Begin Custom Code Disposal
+
+		// End Custom Code Disposal
+	}
+	private void UD01Form_Load(object sender, EventArgs args)
+	{
+		string[] rcv = UD01Form.LaunchFormOptions.ValueIn.ToString().Split('\n');
+		string[] fields = UD01Form.LaunchFormOptions.ValueIn.ToString().Split('~');
+    	this.epiTextBoxC14.Text = fields[2];
+		this.epiTextBoxC1.Text = fields[3];
+		packSlip = fields[2];
+		purPoint = fields[1];
+		vendorNum = Convert.ToInt32(fields[0]);
+	}
+	private void SearchOnPOAdapterShowDialog()
+	{
+		// Wizard Generated Search Method
+		// You will need to call this method from another method in custom code
+		// For example, [Form]_Load or [Button]_Click
+
+		bool recSelected;
+		string whereClause = string.Empty;
+		System.Data.DataSet dsPOAdapter = Ice.UI.FormFunctions.SearchFunctions.listLookup(this.oTrans, "POAdapter", out recSelected, true, whereClause);
+		if (recSelected)
+		{
+			System.Data.DataRow adapterRow = dsPOAdapter.Tables[0].Rows[0];
+
+			// Map Search Fields to Application Fields
+			epiTextBoxC1.Text = adapterRow["PONum"].ToString();
+		}
+	}
+
+	private void SearchOnPORelSearchAdapterShowDialog()
+	{
+		// Wizard Generated Search Method
+		// You will need to call this method from another method in custom code
+		// For example, [Form]_Load or [Button]_Click
+
+		bool recSelected;
+		string whereClause = "PONum = " + Convert.ToInt32(epiTextBoxC1.Text);
+		System.Data.DataSet dsPORelSearchAdapter = Ice.UI.FormFunctions.SearchFunctions.listLookup(this.oTrans, "PORelSearchAdapter", out recSelected, true, whereClause);
+		if (recSelected)
+		{
+			System.Data.DataRow adapterRow = dsPORelSearchAdapter.Tables[0].Rows[0];
+
+			// Map Search Fields to Application Fields
+			epiCheckBoxC1.Checked = true;
+			epiTextBoxC2.Text = adapterRow["POLine"].ToString();
+			epiTextBoxC3.Text = adapterRow["PORelNum"].ToString();
+			epiTextBoxC4.Text = adapterRow["POLinePartNum"].ToString();
+			epiTextBoxC5.Text = adapterRow["POLineLineDesc"].ToString();
+			epiNumericEditorC3.Value =  Convert.ToDecimal(adapterRow["ReceivedQty"]);
+			epiTextBoxC7.Text = adapterRow["PUM"].ToString();
+			epiUltraComboC1.Value = adapterRow["PUM"].ToString();
+			epiTextBoxC11.Text = adapterRow["PUM"].ToString();	
+			epiNumericEditorC1.Value = Convert.ToDecimal(adapterRow["XRelQty"]);
+			
+			epiTextBoxC6.Text = GetLot().ToString();
+			ReceiptAdapter _RAdapter = new ReceiptAdapter(oTrans);
+			_RAdapter.BOConnect();	
+			_RAdapter.GetByID(vendorNum, purPoint, packSlip);
+			
+			//DataSet ds = _RAdapter.ReceiptData;
+			
+			_RAdapter.GetNewRcvDtl(vendorNum, purPoint, packSlip);
+			
+			int rowCount = _RAdapter.ReceiptData.RcvDtl.Rows.Count;
+	        DataRow rcvDtlRow = _RAdapter.ReceiptData.RcvDtl.Rows[(rowCount - 1)];
+			
+	        rcvDtlRow.BeginEdit();
+			rcvDtlRow["PartNum"] = epiTextBoxC4.Text;
+			rcvDtlRow["PONum"] = Convert.ToInt32(epiTextBoxC1.Text);
+			rcvDtlRow["POLine"] = Convert.ToInt32(epiTextBoxC2.Text);
+			rcvDtlRow["PORelNum"] = Convert.ToInt32(epiTextBoxC3.Text);
+			rcvDtlRow["IUM"] = epiTextBoxC7.Text;
+			rcvDtlRow["PUM"] = epiTextBoxC7.Text;
+			rcvDtlRow.EndEdit();
+			string serialWarning  ="";
+			_RAdapter.GetDtlPOLineInfo(vendorNum, purPoint, packSlip, 0, Convert.ToInt32(epiTextBoxC2.Text), out serialWarning);
+
+			int count = _RAdapter.ReceiptData.RcvDtl.Rows.Count;
+        	DataRow drRcvHead = _RAdapter.ReceiptData.RcvDtl.Rows[(count - 1)];
+			isTrackLots = Convert.ToBoolean(drRcvHead["PartNumTrackLots"]);
+			epiComboC1.Value = drRcvHead["WarehouseCode"];
+			epiComboC2.Value = drRcvHead["BinNum"];
+	      
+			DataTable tbl = SearchPartUOM(epiTextBoxC4.Text);
+			if(tbl != null && tbl.Rows.Count > 0)
+			{
+				epiUltraComboC1.DataSource = tbl;
+				epiUltraComboC1.DisplayMember = "UOMConv_UOMcode";
+		        epiUltraComboC1.ValueMember = "UOMConv_UOMCode";
+		        epiUltraComboC1.DataBind();
+				epiUltraComboC1.DropDownWidth = 200;
+			}
+			
+			_RAdapter.Dispose();
+		}
+		
+	}
+
+	private void epiButtonC2_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		SearchOnPORelSearchAdapterShowDialog();
+	}
+
+	private void epiButtonC4_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		UD01Form.Close();
+	}
+
+	private void epiButtonC3_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		if(Convert.ToInt32(epiTextBoxC2.Text) == 0 && Convert.ToInt32(epiTextBoxC3.Text) == 0)
+		{
+			MessageBox.Show("Please select POLine and PORel", "Error");
+			return;
+		}
+		if(Convert.ToInt32(epiNumericEditorC2.Value) == 0)
+		{
+			MessageBox.Show("Please enter spread into Lot", "Error");
+			return;
+		}
+		
+		double numLine = 0;
+		int totalQuantity = Convert.ToInt32(epiNumericEditorC1.Value);
+		int totalLot = Convert.ToInt32(epiNumericEditorC2.Value);
+
+		numLine = totalQuantity / totalLot;
+		double roundNum = Math.Log10(numLine);
+		double round= Math.Floor(roundNum);
+		decimal inputOurQty = 0;
+		switch(Convert.ToInt32(round))
+		{
+			case 0:
+				inputOurQty = Convert.ToInt32(Math.Floor(numLine));
+			break;
+			case 1:
+				inputOurQty = Convert.ToInt32(numLine)/ 10*10;
+			break;
+			case 2:
+				inputOurQty = Convert.ToInt32(numLine) /100*100;
+			break;
+			case 3:
+				inputOurQty = Convert.ToInt32(numLine) / 1000 * 1000;
+			break;
+			case 4:
+				inputOurQty = Convert.ToInt32(numLine) / 10000*10000;
+			break;
+			case 5:
+				inputOurQty = Convert.ToInt32(numLine) / 100000*100000;
+			break;
+			case 6:
+				inputOurQty = Convert.ToInt32(numLine) / 100000*100000;
+			break;
+			case 7:
+				inputOurQty = Convert.ToInt32(numLine) / 10000000*10000000;
+			break;
+		}
+		
+		decimal finalQty = (totalQuantity - (inputOurQty * totalLot)) + inputOurQty;
+		// add new line with same quantity of each line
+		try {
+			FormFunctions.LoadSplash("Processing...");
+			ReceiptAdapter _RAdapter = new ReceiptAdapter(oTrans);
+			_RAdapter.BOConnect();	
+			_RAdapter.GetByID(vendorNum, purPoint, packSlip);
+			
+			for(int i = 0; i < totalLot; i++)
+			{
+				DataTable tbl = GetCurrentLot();
+				string curLot = "";
+				if (tbl == null || tbl.Rows.Count == 0)
+				{
+					curLot = "0000001";
+				}
+				else
+				{
+					curLot = (Convert.ToInt32(tbl.Rows[0]["Calculated_MaxResult"]) + 1).ToString().PadLeft(7,'0');
+				}
+				_RAdapter.GetNewRcvDtl(vendorNum, purPoint, packSlip);
+				int rowCount = _RAdapter.ReceiptData.RcvDtl.Rows.Count;
+		        DataRow addRow = _RAdapter.ReceiptData.RcvDtl.Rows[(rowCount - 1)];
+		        addRow.BeginEdit();
+				addRow["Received"] = true;
+				addRow["ReceivedComplete"] = epiCheckBoxC1.Checked;
+				addRow["PackSlip"] = epiTextBoxC14.Text;
+				addRow["PackLine"] = 0;
+				addRow["PartNum"] = epiTextBoxC4.Text;
+				addRow["PartDescription"] = epiTextBoxC5.Text;
+				addRow["PONum"] = Convert.ToInt32(epiTextBoxC1.Text);
+				addRow["POLine"] = Convert.ToInt32(epiTextBoxC2.Text);
+				addRow["PORelNum"] = Convert.ToInt32(epiTextBoxC3.Text);
+				addRow["IUM"] = epiTextBoxC7.Text;
+				addRow["PUM"] = epiTextBoxC7.Text;
+				addRow["LotNum"] = isTrackLots ? DateTime.Now.ToString("yyyyMMdd") + "-" + curLot : "";
+				addRow["BinNum"] = epiComboC2.Value;
+				addRow["InputOurQty"] = (i == totalLot- 1) ? finalQty : inputOurQty;  
+				addRow["VendorQty"] = (i == totalLot- 1) ? finalQty : inputOurQty;  
+				addRow["WareHouseCode"] = epiComboC1.Value;
+		        addRow.EndEdit();
+	
+				_RAdapter.Update();
+			
+			}
+			FormFunctions.CloseSplash();
+			DialogResult dialogResult = MessageBox.Show("Process done! Do you want to close this form?", "Message", MessageBoxButtons.YesNo);
+			if (dialogResult == DialogResult.Yes)
+	        {
+				UD01Form.Close();
+			}
+		else
+		{
+			return;
+		}
+		}
+		catch(Exception ex) {
+			FormFunctions.CloseSplash();
+			ExceptionBox.Show(ex);
+		}
+	}
+
+	private void epiButtonC1_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		SearchOnPOAdapterShowDialog();
+	}
+
+	private DataTable SearchPartUOM(string partNum)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+		dataset.ExecutionParameter.AddExecutionParameterRow("PartNum", partNum, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");        
+        DataSet ds = querry.ExecuteByID("Filmquest_PartUOM", dataset);
+        return ds.Tables[0];
+    }
+
+	private string GetLot()
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+		dataset.ExecutionParameter.AddExecutionParameterRow("Year", DateTime.Now.Year.ToString() , "int", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");    
+		dataset.ExecutionParameter.AddExecutionParameterRow("Month", DateTime.Now.Month.ToString() , "int", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");    
+		dataset.ExecutionParameter.AddExecutionParameterRow("Day", DateTime.Now.Day.ToString() , "int", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");    
+        DataSet ds = querry.ExecuteByID("DVTFilmquestMaxLot", dataset);
+		int maxResult = -1;
+		string currentLot = "";
+		DataTable tbl2 = ds.Tables[0];
+		if(tbl2 != null && tbl2.Rows.Count > 0)
+		{
+			foreach (DataRow item in tbl2.Rows)
+			{
+			    maxResult += Convert.ToInt32(item["Calculated_MaxResult"]);
+			}
+			currentLot += DateTime.Now.ToString("yyyyMMdd") + "-" + (maxResult).ToString("0000000");
+		}
+		else {
+			currentLot = DateTime.Now.ToString("yyyyMMdd") + "-0000001";
+		}
+		//MessageBox.Show(currentLot); 
+        return currentLot;
+    }
+		private DataTable GetCurrentLot()
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+		dataset.ExecutionParameter.AddExecutionParameterRow("Year", DateTime.Now.Year.ToString() , "int", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");    
+		dataset.ExecutionParameter.AddExecutionParameterRow("Month", DateTime.Now.Month.ToString() , "int", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");    
+		dataset.ExecutionParameter.AddExecutionParameterRow("Day", DateTime.Now.Day.ToString() , "int", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");    
+        DataSet ds = querry.ExecuteByID("DVTFilmquestMaxLot", dataset);
+		return ds.Tables[0];
+    }
+
+	private void epiComboC1_ValueChanged(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		epiComboC2.Text = "";
+		epiComboC2.SearchFilter = "WarehouseCode ='"+ epiComboC1.Value +"'";
+	}
+}
+
+
+// **************************************************
+// Custom code for PkgControlIDBuildSplitMergeForm
+// Created: 8/16/2022 3:25:28 PM
+// **************************************************
+
+extern alias Erp_Contracts_BO_PkgControlIDBuildSplitMerge;
+extern alias Erp_Contracts_BO_IssueReturn;
+extern alias Erp_Contracts_BO_PkgControlIDMaint;
+extern alias Erp_Adapters_PkgControlIDBuildSplitMerge;
+
+using System;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Windows.Forms;
+using Erp.Adapters;
+using Erp.UI;
+using Ice.Lib;
+using Ice.Adapters;
+using Ice.Lib.Customization;
+using Ice.Lib.ExtendedProps;
+using Ice.Lib.Framework;
+using Ice.Lib.Searches;
+using Ice.UI.FormFunctions;
+
+public class Script
+{
+	// ** Wizard Insert Location - Do Not Remove 'Begin/End Wizard Added Module Level Variables' Comments! **
+	// Begin Wizard Added Module Level Variables **
+	Erp.Adapters.PkgControlIDBuildSplitMergeAdapter PkgAdap;
+	private EpiBaseAdapter oTrans_adapter;
+	private string whCode;
+	private string binNum;
+	private EpiDataView edvSource;
+	private EpiDataView edvSourceItem;
+	// End Wizard Added Module Level Variables **
+
+	// Add Custom Module Level Variables Here **
+
+	public void InitializeCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Variable Initialization' lines **
+		// Begin Wizard Added Variable Initialization
+		edvSource = ((EpiDataView)(this.oTrans.EpiDataViews["PCIDBuildSplitMergeSource"]));
+		edvSourceItem = ((EpiDataView)(this.oTrans.EpiDataViews["PCIDBuildSplitMergeSourceItem"]));
+
+		this.oTrans_adapter = ((EpiBaseAdapter)(this.csm.TransAdaptersHT["oTrans_adapter"]));
+		this.oTrans_adapter.BeforeAdapterMethod += new BeforeAdapterMethod(this.oTrans_adapter_BeforeAdapterMethod);
+		// End Wizard Added Variable Initialization
+
+		// Begin Wizard Added Custom Method Calls
+
+		this.epiButtonC1.Click += new System.EventHandler(this.epiButtonC1_Click);
+		this.epiButtonC2.Click += new System.EventHandler(this.epiButtonC2_Click);
+		// End Wizard Added Custom Method Calls
+	}
+
+	public void DestroyCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Object Disposal' lines **
+		// Begin Wizard Added Object Disposal
+
+		this.epiButtonC1.Click -= new System.EventHandler(this.epiButtonC1_Click);
+		this.epiButtonC2.Click -= new System.EventHandler(this.epiButtonC2_Click);
+		this.oTrans_adapter.BeforeAdapterMethod -= new BeforeAdapterMethod(this.oTrans_adapter_BeforeAdapterMethod);
+		this.oTrans_adapter = null;
+		// End Wizard Added Object Disposal
+
+		// Begin Custom Code Disposal
+
+		// End Custom Code Disposal
+	}
+
+	private void epiButtonC1_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		SearchOnPkgControlIDMaintAdapterShowDialog();
+	}
+
+	private void SearchOnPkgControlIDMaintAdapterShowDialog()
+	{
+		// Wizard Generated Search Method
+		// You will need to call this method from another method in custom code
+		// For example, [Form]_Load or [Button]_Click
+
+		bool recSelected;
+		string whereClause = string.Empty;
+		System.Data.DataSet dsPkgControlIDMaintAdapter = Ice.UI.FormFunctions.SearchFunctions.listLookup(this.oTrans, "PkgControlIDMaintAdapter", out recSelected, true, whereClause);
+		if (recSelected)
+		{
+			string pkgControlStatus = "";
+			System.Data.DataRow adapterRow = dsPkgControlIDMaintAdapter.Tables[0].Rows[0];
+			epiTextBoxC1.Text = adapterRow["PCID"].ToString();
+			//EpiDataView edv = ((EpiDataView)(this.oTrans.EpiDataViews["PCIDBuildSplitMergeSource"]));
+			System.Data.DataRow edvRow = edvSource.CurrentDataRow;
+			if ((edvRow != null))
+			{
+				edvRow.BeginEdit();
+				edvRow["PkgControlStatus"] = adapterRow["PkgControlStatus"];
+				pkgControlStatus = adapterRow["PkgControlStatus"].ToString();
+				edvRow["PkgControlIDCode"] = adapterRow["PkgControlIDCode"];
+				edvRow["PkgCode"] = adapterRow["PkgCode"];
+				edvRow["BinNum"] = adapterRow["BinNum"];
+				whCode = adapterRow["WarehouseCode"].ToString();
+				binNum =  adapterRow["BinNum"].ToString();
+				edvRow.EndEdit();
+			}
+			PkgAdap = new PkgControlIDBuildSplitMergeAdapter(this.oTrans);
+			PkgAdap.BOConnect();
+			string newSourcePCID = epiTextBoxC1.Text;
+			if(pkgControlStatus == "STOCK")
+			{
+				PkgAdap.OnChangeSourcePCID(newSourcePCID, true);
+			}
+			else {
+				DataTable tbl = new DataTable();
+				
+				PkgAdap.GetSourcePCID(newSourcePCID, true);
+				tbl.Merge(PkgAdap.PCIDBuildSplitMergeSourceData.PCIDBuildSplitMergeSourceItem);
+				Ice.Lib.Framework.EpiUltraGrid grid=this.csm.GetNativeControlReference("e29b0443-7e3e-44a0-a988-321beb2f5dd3") as Ice.Lib.Framework.EpiUltraGrid;
+				if(tbl != null && tbl.Rows.Count > 0)
+				{
+					if(grid != null)
+					{
+						grid.DataSource = tbl;
+						grid.DataBind();
+					}	
+				}
+	
+				edvSourceItem.dataView = new DataView(PkgAdap.PCIDBuildSplitMergeSourceData.PCIDBuildSplitMergeSourceItem);
+			}
+			
+		}
+	}
+
+	private void epiButtonC2_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		PkgAdap.BOConnect();
+		string newSourcePCID = epiTextBoxC1.Text;
+		Erp.Adapters.IssueReturnAdapter IRAdap = new Erp.Adapters.IssueReturnAdapter(this.oTrans);
+		IRAdap.BOConnect();
+		string pcTranType = "STK-STK";
+		Guid pcMtlQueueRowID = new Guid("00000000-0000-0000-0000-000000000000");
+		string pCallProcess = "Unpick";	
+		IRAdap.GetNewIssueReturn(pcTranType, pcMtlQueueRowID, pCallProcess);
+		bool requiresUserInput = false;
+		IRAdap.PrePerformMaterialMovement(out requiresUserInput);
+		string partNum = "";
+		string legalNumMsg = "";
+		IRAdap.MassUnpickByPCID(newSourcePCID, whCode, binNum, partNum, out legalNumMsg);
+		
+		bool getPCIDContents = true;
+		PkgAdap.OnChangeSourcePCID(newSourcePCID, true);
+		System.Data.DataRow edvRow = edvSource.CurrentDataRow;
+		if ((edvRow != null))
+		{
+			edvRow.BeginEdit();
+			edvRow["PCID"] = newSourcePCID;
+			edvRow.EndEdit();
+		}
+		edvSourceItem.dataView = new DataView(PkgAdap.PCIDBuildSplitMergeSourceData.PCIDBuildSplitMergeSourceItem);
+		IRAdap.Dispose();
+		IRAdap = null;
+	}
+
+	private void oTrans_adapter_BeforeAdapterMethod(object sender, BeforeAdapterMethodArgs args)
+	{
+		// ** Argument Properties and Uses **
+		// ** args.MethodName **
+		// ** Add Event Handler Code **
+
+		// ** Use MessageBox to find adapter method name
+		EpiMessageBox.Show(args.MethodName);
+		switch (args.MethodName)
+		{
+			case "Update":
+				// DialogResult dialogResult = EpiMessageBox.Show("Cancel Update?", "Cancel", MessageBoxButtons.YesNo);
+				// if ((dialogResult == DialogResult.Yes))
+				// {
+				// 	args.Cancel = true;
+				// } else
+				// {
+				// 	DoSomethingElse();
+				// }
+				break;
+		}
+
+	}
+}
+Call BAQ Kenitic
+private static DataTable GetRelQty(string orderno)
+    {
+                        DynamicQueryAdapter querry = new DynamicQueryAdapter(oTrans);
+ 
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+ 
+        dataset.ExecutionParameter.AddExecutionParameterRow("OrderNum", orderno, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+                        querry.BOConnect();
+        querry.ExecuteByID("83158-SORelQtyCheck", dataset);
+                        DataSet ds = querry.QueryResults;
+                        querry.Dispose();
+        return ds.Tables[0];
+    }
+ 
+
+
+
+
