@@ -1,0 +1,866 @@
+// **************************************************
+// Custom code for UD01Form
+// Created: 8/2/2018 2:10:40 PM
+// **************************************************
+
+extern alias Erp_Adapters_ServiceCallCenter;
+extern alias Erp_Adapters_JobEntry;
+extern alias Erp_Adapters_Image;
+extern alias Erp_Contracts_BO_Image;
+extern alias Erp_Contracts_BO_ScheduleEngine;
+extern alias Erp_Adapters_ScheduleEngine;
+
+using System;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Windows.Forms;
+using Ice.BO;
+using Ice.UI;
+using Ice.Lib;
+using Ice.Adapters;
+using Erp.Adapters;
+using Ice.Lib.Customization;
+using Ice.Lib.ExtendedProps;
+using Ice.Lib.Framework;
+using Ice.Lib.Searches;
+using Ice.UI.FormFunctions;
+using System.Reflection;
+using Infragistics.Win.UltraWinToolbars;
+using Infragistics.Win.UltraWinSchedule;
+using Infragistics.Win;
+using Infragistics.Win.UltraWinGrid;
+using System.Drawing;
+using System.IO;
+using System.Text;
+
+public class AddRes
+{
+	public string resgrp { get; set; }
+	public string res { get; set; }
+}
+
+public class Script
+{
+	// ** Wizard Insert Location - Do Not Remove 'Begin/End Wizard Added Module Level Variables' Comments! **
+	// Begin Wizard Added Module Level Variables **
+	private AddRes objExt;
+	Infragistics.Win.UltraWinDock.UltraDockManager dock;
+	private EpiDataView emp;
+	private UltraCalendarInfo uCalInfo;
+    private UltraTimelineView uTimeView;
+    private UltraCalendarLook uCalLook;
+    private System.ComponentModel.IContainer components = null;
+	private DataTable tblSche;
+	// End Wizard Added Module Level Variables **
+
+	// Add Custom Module Level Variables Here **
+
+	public void InitializeCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Variable Initialization' lines **
+		// Begin Wizard Added Variable Initialization
+		Object obj = typeof(Ice.UI.App.UD01Entry.UD01Form).InvokeMember("baseDockManager", BindingFlags.Instance | BindingFlags.GetField | BindingFlags.NonPublic, null, UD01Form, null);
+        dock = (Infragistics.Win.UltraWinDock.UltraDockManager)obj;
+        dock.DockAreas[0].Panes[0].Closed = true;
+		LoadEmpView();
+		this.UD01Form.BeforeToolClick += new Ice.Lib.Framework.BeforeToolClickEventHandler(this.UD01Form_BeforeToolClick);
+		// End Wizard Added Variable Initialization
+
+		// Begin Wizard Added Custom Method Calls
+
+		this.epiButtonC1.Click += new System.EventHandler(this.epiButtonC1_Click);
+		this.epiUltraGridC1.InitializeLayout += new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.epiUltraGridC1_InitializeLayout);
+		this.epiCheckBoxC1.CheckedChanged += new System.EventHandler(this.epiCheckBoxC1_CheckedChanged);
+		this.epiUltraGridC1.InitializeRow += new Infragistics.Win.UltraWinGrid.InitializeRowEventHandler(this.epiUltraGridC1_InitializeRow);
+		// End Wizard Added Custom Method Calls
+	}
+
+	public void DestroyCustomCode()
+	{
+		// ** Wizard Insert Location - Do not delete 'Begin/End Wizard Added Object Disposal' lines **
+		// Begin Wizard Added Object Disposal
+
+		this.epiButtonC1.Click -= new System.EventHandler(this.epiButtonC1_Click);
+		this.epiUltraGridC1.InitializeLayout -= new Infragistics.Win.UltraWinGrid.InitializeLayoutEventHandler(this.epiUltraGridC1_InitializeLayout);
+		this.epiCheckBoxC1.CheckedChanged -= new System.EventHandler(this.epiCheckBoxC1_CheckedChanged);
+		this.UD01Form.BeforeToolClick -= new Ice.Lib.Framework.BeforeToolClickEventHandler(this.UD01Form_BeforeToolClick);
+		this.epiUltraGridC1.InitializeRow -= new Infragistics.Win.UltraWinGrid.InitializeRowEventHandler(this.epiUltraGridC1_InitializeRow);
+		// End Wizard Added Object Disposal
+
+		// Begin Custom Code Disposal
+
+		// End Custom Code Disposal
+	}
+
+	private void LoadEmpView()
+    {
+        DynamicQueryAdapter _baqAdapter = new DynamicQueryAdapter(oTrans);
+        _baqAdapter.BOConnect();
+
+        _baqAdapter.ExecuteByID("MFSTechList");
+
+        emp = new EpiDataView();
+
+        emp.dataView = new DataView(_baqAdapter.QueryResults.Tables["Results"]);
+
+
+        // Make columns read-only
+        foreach (DataColumn dc in emp.dataView.Table.Columns)
+        {
+
+            dc.ExtendedProperties["ReadOnly"] = true;
+
+            dc.ExtendedProperties["Like"] = dc.ColumnName.ToString();
+
+        }
+
+        if ((oTrans.EpiDataViews.ContainsKey("BAQemp") == false))
+        {
+
+            oTrans.Add("BAQemp", emp);
+        }
+
+        _baqAdapter.Dispose();
+
+    }
+
+	private DataTable GetTechList()
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+
+        DataSet ds = querry.ExecuteByID("MFSTechList", dataset);
+        return ds.Tables[0];
+    }
+
+	private DataTable GetOpenFS(string tech)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+
+        dataset.ExecutionParameter.AddExecutionParameterRow("EmpID", tech, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        DataSet ds = querry.ExecuteByID("MFSOpenFS", dataset);
+        return ds.Tables[0];
+    }
+
+	private DataTable GetEmpResource(string tech)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+
+        dataset.ExecutionParameter.AddExecutionParameterRow("EmpID", tech, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        DataSet ds = querry.ExecuteByID("MFSEmpResource", dataset);
+        return ds.Tables[0];
+    }
+
+	private DataTable GetJobOprDtl(string job, string grp)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+
+        dataset.ExecutionParameter.AddExecutionParameterRow("JobNum", job, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+		dataset.ExecutionParameter.AddExecutionParameterRow("ResourceGroup", grp, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        DataSet ds = querry.ExecuteByID("MFSJobOprDtl", dataset);
+        return ds.Tables[0];
+    }
+
+	private DataTable GetJobSched(string job)
+    {
+        Ice.Core.Session se = (Ice.Core.Session)this.oTrans.Session;
+        Ice.Proxy.BO.DynamicQueryImpl querry = Ice.Lib.Framework.WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(se, Epicor.ServiceModel.Channels.ImplBase<Ice.Contracts.DynamicQuerySvcContract>.UriPath);
+
+        Ice.BO.QueryExecutionDataSet dataset = new Ice.BO.QueryExecutionDataSet();
+
+        dataset.ExecutionParameter.AddExecutionParameterRow("JobNum", job, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+		//dataset.ExecutionParameter.AddExecutionParameterRow("ResourceGroup", grp, "nvarchar", false, new Guid("00000000-0000-0000-0000-000000000000"), "A");
+        DataSet ds = querry.ExecuteByID("MFSJobSchedule", dataset);
+        return ds.Tables[0];
+    }
+
+	private void UD01Form_Load(object sender, EventArgs args)
+	{
+		// Add Event Handler Code
+		baseToolbarsManager.Tools["NewTool"].SharedProps.Visible = false;
+        baseToolbarsManager.Tools["DeleteTool"].SharedProps.Visible = false;
+        baseToolbarsManager.Tools["PrintPreviewTool"].SharedProps.Visible = false;
+		//LoadSchedule();
+
+		if (UD01Form.LaunchFormOptions != null)
+	    {
+	        if (UD01Form.LaunchFormOptions.ValueIn != null)
+	        {
+            	epiCheckBoxC1.Checked = true;
+				emp.dataView.RowFilter = "EmpBasic_ServTech = 1";
+				string[] key = UD01Form.LaunchFormOptions.ValueIn.ToString().Split('~');
+
+				FormFunctions.LoadSplash("Processing...");
+				DataTable sche = new DataTable();
+		        sche.Columns.Add("EmpID", typeof(string));
+		        sche.Columns.Add("From", typeof(DateTime));
+		        sche.Columns.Add("To", typeof(DateTime));
+		        sche.Columns.Add("Subject", typeof(string));
+				sche.Columns.Add("EmpCheck", typeof(string));
+				sche.Columns.Add("FromCheck", typeof(DateTime));
+		        sche.Columns.Add("ToCheck", typeof(DateTime));
+				sche.Columns.Add("CallNum", typeof(string));
+				sche.Columns.Add("JobNum", typeof(string));
+				DateTime min = new DateTime(Convert.ToInt32(key[0]), Convert.ToInt32(key[1]), Convert.ToInt32(key[2]));
+				foreach (UltraGridRow r in epiUltraGridC1.Rows)
+		        {
+					DataTable tblOpenFS = GetOpenFS(r.Cells["EmpBasic_EmpID"].Value.ToString());
+					foreach (DataRow dr in tblOpenFS.Rows)
+					{
+						DateTime from = Convert.ToDateTime(dr["Calculated_FromDate"]).Date.AddSeconds(Convert.ToInt32(dr["Calculated_FromTime"]));
+						int duration = Convert.ToInt32(Convert.ToDecimal(dr["FSCallhd_Duration"])*86400);
+						DateTime to = from.AddSeconds(duration);
+						string subject = "Call: " + dr["FSCallhd_CallNum"].ToString();
+						if (dr["JobHead_JobNum"].ToString() != "")
+						{
+							subject += " - Job: " + dr["JobHead_JobNum"].ToString();
+						}
+						sche.Rows.Add(dr["Calculated_EmpID"].ToString(), from, to, subject, dr["Calculated_EmpID"].ToString(), from, to, dr["FSCallhd_CallNum"].ToString(),dr["JobHead_JobNum"].ToString());
+					}
+		        }
+				DataTable tblOpenFS2 = GetOpenFS("UNASSIGN");
+				foreach (DataRow dr2 in tblOpenFS2.Rows)
+				{
+					DateTime from2 = Convert.ToDateTime(dr2["Calculated_FromDate"]).Date.AddSeconds(Convert.ToInt32(dr2["Calculated_FromTime"]));
+					int duration2 = Convert.ToInt32(Convert.ToDecimal(dr2["FSCallhd_Duration"])*86400);
+					DateTime to2 = from2.AddSeconds(duration2);
+					string subject2 = "Call: " + dr2["FSCallhd_CallNum"].ToString();
+					if (dr2["JobHead_JobNum"].ToString() != "")
+					{
+						subject2 += " - Job: " + dr2["JobHead_JobNum"].ToString();
+					}
+					sche.Rows.Add(dr2["Calculated_EmpID"].ToString(), from2, to2, subject2, dr2["Calculated_EmpID"].ToString(), from2, to2, dr2["FSCallhd_CallNum"].ToString(),dr2["JobHead_JobNum"].ToString());
+				}
+				LoadEquipSchedule(sche, min, true);
+				FormFunctions.CloseSplash();
+				Infragistics.Win.UltraWinDock.DockableControlPane c = this.csm.PersonalizeCustomizeManager.CustControlMan.CustomSheetsHT["d0bddd46-0db0-4cf5-b977-4b9a2e990c99"] as Infragistics.Win.UltraWinDock.DockableControlPane;
+		        c.IsSelectedTab = true;
+	        }
+	    }
+	}
+
+	private void LoadSchedule()
+    {
+        this.components = new System.ComponentModel.Container();
+        this.uCalInfo = new Infragistics.Win.UltraWinSchedule.UltraCalendarInfo(this.components);
+        this.uCalLook = new Infragistics.Win.UltraWinSchedule.UltraCalendarLook(this.components);
+        this.uTimeView = new Infragistics.Win.UltraWinSchedule.UltraTimelineView();
+		DateInterval dayInterval;
+		if (epiUltraComboC1.Text == "Weeks")
+		{
+        	dayInterval = new DateInterval(1, DateIntervalUnits.Weeks);
+			dayInterval.HeaderTextFormat = "dd/MM/yyyy";
+		}
+		else if (epiUltraComboC1.Text == "Months")
+		{
+			dayInterval = new DateInterval(1, DateIntervalUnits.Months);
+			dayInterval.HeaderTextFormat = "MMMM - yyyy";
+		}
+		else
+		{
+			dayInterval = new DateInterval(1, DateIntervalUnits.Days);
+			dayInterval.HeaderTextFormat = "dddd (dd/MM/yyyy)";		
+		}
+        ((System.ComponentModel.ISupportInitialize)(this.uTimeView)).BeginInit();
+
+        this.uCalInfo.DataBindingsForAppointments.BindingContextControl = epiGroupBoxC1;
+        this.uCalInfo.DataBindingsForOwners.BindingContextControl = epiGroupBoxC1;
+        this.uCalInfo.Owners.UnassignedOwner.Visible = false;
+
+        this.uTimeView.ColumnWidth = 0;
+        this.uTimeView.Location = new System.Drawing.Point(0, 0);
+        this.uTimeView.Name = "TimeLine";
+        //this.uTimeView.Size = new System.Drawing.Size(804, 483);
+		//this.uTimeView.Size = new System.Drawing.Size(200, 200);
+        this.uTimeView.TabIndex = 0;
+        this.uTimeView.Dock = DockStyle.Fill;
+
+        epiGroupBoxC1.Controls.Add(this.uTimeView);
+        ((System.ComponentModel.ISupportInitialize)(this.uTimeView)).EndInit();
+        this.uTimeView.PrimaryInterval = dayInterval;
+
+        this.uCalInfo.UseAppStyling = false;
+        this.uTimeView.UseAppStyling = false;
+        this.uCalLook.ViewStyle = Infragistics.Win.UltraWinSchedule.ViewStyle.Office2007;
+        this.uTimeView.CalendarInfo = this.uCalInfo;
+        this.uTimeView.CalendarLook = this.uCalLook;
+        this.uTimeView.MaximumOwnersInView = 6;
+        this.uCalInfo.BeforeDisplayAppointmentDialog += new DisplayAppointmentDialogEventHandler(uCalInfo_BeforeDisplayAppointmentDialog);
+    }
+
+	private void epiUltraGridC1_InitializeLayout(object sender, Infragistics.Win.UltraWinGrid.InitializeLayoutEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		args.Layout.Bands[0].Columns["EmpBasic_Company"].Hidden = true;
+		args.Layout.Bands[0].Columns["EmpBasic_ImageID"].Hidden = true;
+		args.Layout.Bands[0].Columns.Insert(2, "Image");
+        args.Layout.Bands[0].Columns["Image"].Header.Caption = "Emp Image";
+        args.Layout.Bands[0].Columns["Image"].CellActivation = Infragistics.Win.UltraWinGrid.Activation.ActivateOnly;
+		args.Layout.Bands[0].Columns["Image"].DataType = typeof(Image);
+        args.Layout.Bands[0].Columns["Image"].Style = Infragistics.Win.UltraWinGrid.ColumnStyle.Image;
+		args.Layout.Bands[0].Columns["Image"].CellAppearance.ImageHAlign = HAlign.Center;
+		args.Layout.Bands[0].Columns["Image"].CellAppearance.ImageVAlign = VAlign.Middle;
+		args.Layout.Bands[0].Override.DefaultRowHeight = 40;
+	}
+
+	private void epiButtonC1_Click(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		if (epiUltraGridC1.Selected.Rows.Count == 0)
+		{
+			MessageBox.Show("Please Select Technician(s) in order to View Schedule!", "Error");
+			return;
+		}
+		LoadSchedule();
+		FormFunctions.LoadSplash("Processing...");
+		DataTable sche = new DataTable();
+        sche.Columns.Add("EmpID", typeof(string));
+        sche.Columns.Add("From", typeof(DateTime));
+        sche.Columns.Add("To", typeof(DateTime));
+        sche.Columns.Add("Subject", typeof(string));
+		sche.Columns.Add("EmpCheck", typeof(string));
+		sche.Columns.Add("FromCheck", typeof(DateTime));
+        sche.Columns.Add("ToCheck", typeof(DateTime));
+		sche.Columns.Add("CallNum", typeof(string));
+		sche.Columns.Add("JobNum", typeof(string));
+		DateTime min = DateTime.Now.Date;
+		foreach (UltraGridRow r in epiUltraGridC1.Selected.Rows)
+        {
+			DataTable tblOpenFS = GetOpenFS(r.Cells["EmpBasic_EmpID"].Value.ToString());
+			foreach (DataRow dr in tblOpenFS.Rows)
+			{
+				if (Convert.ToDateTime(dr["Calculated_FromDate"]).Date < min)
+				{
+					min = Convert.ToDateTime(dr["Calculated_FromDate"]).Date;
+				}
+				DateTime from = Convert.ToDateTime(dr["Calculated_FromDate"]).Date.AddSeconds(Convert.ToInt32(dr["Calculated_FromTime"]));
+				int duration = Convert.ToInt32(Convert.ToDecimal(dr["FSCallhd_Duration"])*86400);
+				DateTime to = from.AddSeconds(duration);
+				string subject = "Call: " + dr["FSCallhd_CallNum"].ToString();
+				if (dr["JobHead_JobNum"].ToString() != "")
+				{
+					subject += " - Job: " + dr["JobHead_JobNum"].ToString();
+				}
+				sche.Rows.Add(dr["Calculated_EmpID"].ToString(), from, to, subject, dr["Calculated_EmpID"].ToString(), from, to, dr["FSCallhd_CallNum"].ToString(),dr["JobHead_JobNum"].ToString());
+			}
+			sche.Rows.Add(r.Cells["EmpBasic_EmpID"].Value.ToString(), new DateTime(2021,12,24), new DateTime(2021,12,25), "Annual Leave", r.Cells["EmpBasic_EmpID"].Value.ToString(), new DateTime(2021,12,24), new DateTime(2021,12,25), "0","");
+        }
+		DataTable tblOpenFS2 = GetOpenFS("UNASSIGN");
+		foreach (DataRow dr2 in tblOpenFS2.Rows)
+		{
+			DateTime from2 = Convert.ToDateTime(dr2["Calculated_FromDate"]).Date.AddSeconds(Convert.ToInt32(dr2["Calculated_FromTime"]));
+			int duration2 = Convert.ToInt32(Convert.ToDecimal(dr2["FSCallhd_Duration"])*86400);
+			DateTime to2 = from2.AddSeconds(duration2);
+			string subject2 = "Call: " + dr2["FSCallhd_CallNum"].ToString();
+			if (dr2["JobHead_JobNum"].ToString() != "")
+			{
+				subject2 += " - Job: " + dr2["JobHead_JobNum"].ToString();
+			}
+			sche.Rows.Add(dr2["Calculated_EmpID"].ToString(), from2, to2, subject2, dr2["Calculated_EmpID"].ToString(), from2, to2, dr2["FSCallhd_CallNum"].ToString(),dr2["JobHead_JobNum"].ToString());
+		}
+		LoadEquipSchedule(sche, min, false);
+		FormFunctions.CloseSplash();
+		Infragistics.Win.UltraWinDock.DockableControlPane c = this.csm.PersonalizeCustomizeManager.CustControlMan.CustomSheetsHT["d0bddd46-0db0-4cf5-b977-4b9a2e990c99"] as Infragistics.Win.UltraWinDock.DockableControlPane;
+        c.IsSelectedTab = true;
+	}
+
+	private void LoadEquipSchedule(DataTable sche, DateTime min, bool chk)
+    {
+		min = DateTime.Now.AddDays(-3);
+        this.uCalInfo.ActivateDay(min.Date);
+        DataTable emplist = new DataTable();
+        emplist.Columns.Add("EmpID", typeof(string));
+        emplist.Columns.Add("Name", typeof(string));
+		emplist.Rows.Add("UNASSIGN","UNASSIGN");	
+		if (chk == true)
+		{
+	        foreach (UltraGridRow r in epiUltraGridC1.Rows)
+	        {
+	            emplist.Rows.Add(r.Cells["EmpBasic_EmpID"].Value. ToString(), r.Cells["EmpBasic_Name"].Value.ToString());
+	        }
+		}
+		else
+		{
+			foreach (UltraGridRow r in epiUltraGridC1.Selected.Rows)
+	        {
+	            emplist.Rows.Add(r.Cells["EmpBasic_EmpID"].Value. ToString(), r.Cells["EmpBasic_Name"].Value.ToString());
+	        }
+		}
+
+        this.uCalInfo.DataBindingsForOwners.DataSource = emplist;
+        this.uCalInfo.DataBindingsForOwners.KeyMember = "EmpID";
+        this.uCalInfo.DataBindingsForOwners.NameMember = "Name";
+
+		tblSche = sche;
+        this.uCalInfo.DataBindingsForAppointments.DataSource = tblSche;
+        this.uCalInfo.DataBindingsForAppointments.StartDateTimeMember = "From";
+        this.uCalInfo.DataBindingsForAppointments.EndDateTimeMember = "To";
+        this.uCalInfo.DataBindingsForAppointments.SubjectMember = "Subject";
+        this.uCalInfo.DataBindingsForAppointments.OwnerKeyMember = "EmpID";
+        foreach (Appointment app in this.uCalInfo.Appointments)
+        {
+            //app.Locked = true;
+			app.Appearance.ForeColor = System.Drawing.Color.White;
+            app.Appearance.BackColor = System.Drawing.Color.Blue;
+			if (app.Subject.ToString() == "Annual Leave")
+			{
+				app.Appearance.BackColor = System.Drawing.Color.Red;
+			}
+        }
+    }
+
+	private void uCalInfo_BeforeDisplayAppointmentDialog(object sender, DisplayAppointmentDialogEventArgs args)
+    {
+        args.Cancel = true;
+		DialogResult dialogResult = MessageBox.Show("Do you want to add new Resource/Technician?", "Message", MessageBoxButtons.YesNo);
+        if (dialogResult == DialogResult.Yes)
+        {
+			System.Windows.Forms.Form frm = new System.Windows.Forms.Form();
+		    InitForm(frm);
+		    frm.ShowDialog();
+		}
+		else
+		{
+		string[] call = (args.Appointment.BindingListObject as DataRowView).Row["Subject"].ToString().Split(' ');
+        LaunchFormOptions lfo = new LaunchFormOptions();
+        lfo.ValueIn = call[1];
+        ProcessCaller.LaunchCallbackForm(oTrans, "FSGO1100", lfo);
+        /*string apptype = (args.Appointment.BindingListObject as DataRowView).Row["Subject"].ToString().Substring(0, 1);
+        if (apptype == "C")
+        {
+            DialogResult dialogResult = MessageBox.Show("Loading a new Contract will also Remove Unsaved Data. Do you want to Proceed?", "Message", MessageBoxButtons.YesNo);
+            if (dialogResult == DialogResult.Yes)
+            {
+                ClearContract();
+                int leng = (args.Appointment.BindingListObject as DataRowView).Row["Subject"].ToString().Length;
+                string order = (args.Appointment.BindingListObject as DataRowView).Row["Subject"].ToString().Substring(14, leng - 14);
+                LoadContractFromBAQ(order);
+            }
+            else
+            {
+                return;
+            }
+        }
+        else if (apptype == "Q")
+        {
+            int leng = (args.Appointment.BindingListObject as DataRowView).Row["Subject"].ToString().Length;
+            string quote = (args.Appointment.BindingListObject as DataRowView).Row["Subject"].ToString().Substring(11, leng - 11);
+            LaunchFormOptions lfo = new LaunchFormOptions();
+            lfo.ValueIn = quote;
+            ProcessCaller.LaunchCallbackForm(oTrans, "RNTQUOTE", lfo);
+        }
+        else if (apptype == "J")
+        {
+            int leng = (args.Appointment.BindingListObject as DataRowView).Row["Subject"].ToString().Length;
+            string job = (args.Appointment.BindingListObject as DataRowView).Row["Subject"].ToString().Substring(9, leng - 9);
+            LaunchFormOptions lfo = new LaunchFormOptions();
+            lfo.ValueIn = job;
+            ProcessCaller.LaunchCallbackForm(oTrans, "MMGO9530", lfo);
+        }
+        else if (apptype == "P")
+        {
+            string equip = (args.Appointment.BindingListObject as DataRowView).Row["EquipID"].ToString();
+            LaunchFormOptions lfo = new LaunchFormOptions();
+            lfo.ValueIn = equip;
+            ProcessCaller.LaunchCallbackForm(oTrans, "RNTEQP", lfo);
+        }*/
+		}
+    }
+
+	private void epiCheckBoxC1_CheckedChanged(object sender, System.EventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		if (epiCheckBoxC1.Checked == true)
+		{
+			emp.dataView.RowFilter = "EmpBasic_ServTech = 1";
+		}
+		else
+		{
+			emp.dataView.RowFilter = "";
+		}
+	}
+
+	private void UD01Form_BeforeToolClick(object sender, Ice.Lib.Framework.BeforeToolClickEventArgs args)
+	{
+		if (args.Tool.Key.ToString() == "SaveTool")
+        {
+            foreach(DataRow r in tblSche.Rows)
+			{
+				if (Convert.ToDateTime(r["From"]) != Convert.ToDateTime(r["FromCheck"]) || Convert.ToDateTime(r["To"]) != Convert.ToDateTime(r["ToCheck"]))
+				{
+					ChangeSchedule(r["CallNum"].ToString(),Convert.ToDateTime(r["From"]), Convert.ToDateTime(r["To"]), r["JobNum"].ToString());
+					r["FromCheck"] = r["From"];
+					r["ToCheck"] = r["To"];
+				}
+				if (r["EmpID"].ToString() != r["EmpCheck"].ToString())
+				{
+					ChangeEmp(r["CallNum"].ToString(),r["EmpCheck"].ToString(),r["EmpID"].ToString(),r["JobNum"].ToString());
+					r["EmpCheck"] = r["EmpID"];
+				}
+			}
+			MessageBox.Show("Successfully Updated!", "Message");
+        }
+		if (args.Tool.Key.ToString() == "RefreshTool")
+        {
+			RefreshSchedule();
+			DynamicQueryAdapter _baqAdapter = new DynamicQueryAdapter(oTrans);
+            _baqAdapter.BOConnect();
+            _baqAdapter.ExecuteByID("MFSTechList");
+            emp.dataView.Table = _baqAdapter.QueryResults.Tables["Results"];
+            _baqAdapter.Dispose();
+            if (epiCheckBoxC1.Checked == true)
+			{
+				emp.dataView.RowFilter = "EmpBasic_ServTech = 1";
+			}
+			else
+			{
+				emp.dataView.RowFilter = "";
+			}	
+		}
+	}
+
+	private void RefreshSchedule()
+	{
+		FormFunctions.LoadSplash("Processing...");
+		DataTable sche = new DataTable();
+        sche.Columns.Add("EmpID", typeof(string));
+        sche.Columns.Add("From", typeof(DateTime));
+        sche.Columns.Add("To", typeof(DateTime));
+        sche.Columns.Add("Subject", typeof(string));
+		sche.Columns.Add("EmpCheck", typeof(string));
+		sche.Columns.Add("FromCheck", typeof(DateTime));
+        sche.Columns.Add("ToCheck", typeof(DateTime));
+		sche.Columns.Add("CallNum", typeof(string));
+		sche.Columns.Add("JobNum", typeof(string));
+		DateTime min = DateTime.Now.Date;
+		foreach (Owner ow in this.uCalInfo.Owners)
+        {
+			DataTable tblOpenFS = GetOpenFS(ow.Key.ToString());
+			foreach (DataRow dr in tblOpenFS.Rows)
+			{
+				if (Convert.ToDateTime(dr["Calculated_FromDate"]).Date < min)
+				{
+					min = Convert.ToDateTime(dr["Calculated_FromDate"]).Date;
+				}
+				DateTime from = Convert.ToDateTime(dr["Calculated_FromDate"]).Date.AddSeconds(Convert.ToInt32(dr["Calculated_FromTime"]));
+				int duration = Convert.ToInt32(Convert.ToDecimal(dr["FSCallhd_Duration"])*86400);
+				DateTime to = from.AddSeconds(duration);
+				string subject = "Call: " + dr["FSCallhd_CallNum"].ToString();
+				if (dr["JobHead_JobNum"].ToString() != "")
+				{
+					subject += " - Job: " + dr["JobHead_JobNum"].ToString();
+				}
+				sche.Rows.Add(dr["Calculated_EmpID"].ToString(), from, to, subject, dr["Calculated_EmpID"].ToString(), from, to, dr["FSCallhd_CallNum"].ToString(), dr["JobHead_JobNum"].ToString());
+			}
+		}
+		this.uCalInfo.ActivateDay(min.Date);
+		tblSche = sche;
+        this.uCalInfo.DataBindingsForAppointments.DataSource = tblSche;
+        this.uCalInfo.DataBindingsForAppointments.StartDateTimeMember = "From";
+        this.uCalInfo.DataBindingsForAppointments.EndDateTimeMember = "To";
+        this.uCalInfo.DataBindingsForAppointments.SubjectMember = "Subject";
+        this.uCalInfo.DataBindingsForAppointments.OwnerKeyMember = "EmpID";
+		foreach (Appointment app in this.uCalInfo.Appointments)
+        {
+            //app.Locked = true;
+			app.Appearance.ForeColor = System.Drawing.Color.White;
+            app.Appearance.BackColor = System.Drawing.Color.Blue;
+        }
+		FormFunctions.CloseSplash();
+	}
+	
+	private void ChangeSchedule(string call, DateTime from, DateTime to, string job)
+	{
+		ServiceCallCenterAdapter adapterSC = new ServiceCallCenterAdapter(this.oTrans);
+        adapterSC.BOConnect();
+		adapterSC.GetByID(Convert.ToInt32(call));
+        DataRow[] matchRows = adapterSC.ServiceCallCenterData.FSCallhd.Select("CallNum = " + call);
+        DataRow editRow = matchRows[0];
+        editRow.BeginEdit();
+        editRow["SchedDate"] = from.Date;
+		editRow["SchedTime"] = from.Hour*3600 + from.Minute*60;
+		editRow["Duration"] = Convert.ToDecimal((to - from).TotalDays);
+		editRow.EndEdit();
+		adapterSC.Update();
+		adapterSC.Dispose();
+
+		JobEntryAdapter adapterJob = new JobEntryAdapter(this.oTrans);
+        adapterJob.BOConnect();
+		adapterJob.GetByID(job);
+        DataRow editRow2 = adapterJob.JobEntryData.JobHead.Rows[0];
+        editRow2.BeginEdit();
+        editRow2["ReqDueDate"] = from.Date;
+		editRow2.EndEdit();
+		adapterJob.Update();
+		adapterJob.Dispose();
+
+		DataTable tblJobSched = GetJobSched(job);
+		if (tblJobSched != null && tblJobSched.Rows.Count > 0)
+		{
+			string mess; 
+			bool finished = false;
+			Ice.Core.Session session = (Ice.Core.Session)this.oTrans.Session;
+            Erp.Proxy.BO.ScheduleEngineImpl schedule = WCFServiceSupport.CreateImpl<Erp.Proxy.BO.ScheduleEngineImpl>(session, Epicor.ServiceModel.Channels.ImplBase<Erp.Contracts.ScheduleEngineSvcContract>.UriPath);
+            Erp.BO.ScheduleEngineDataSet ds = new Erp.BO.ScheduleEngineDataSet();
+            Erp.BO.ScheduleEngineDataSet.ScheduleEngineDataTable dsTable = ds.ScheduleEngine;
+            //ds.Tables.Add(dsTable);
+            Erp.BO.ScheduleEngineDataSet.ScheduleEngineRow r = ds.ScheduleEngine.NewScheduleEngineRow();
+            r.Company = session.CompanyID;
+            r.JobNum = job;
+			r.AssemblySeq = 0;
+			r.OprSeq = 0;
+			r.OpDtlSeq = 0;
+			if (tblJobSched.Rows[0]["Plant_SchedulingDirection"].ToString() == "End")
+			{
+				r.EndDate =  Convert.ToDateTime(from);
+				r.EndTime = 0;
+				r.ScheduleDirection = "End";
+			}
+			else
+			{
+				r.StartDate = Convert.ToDateTime(from);
+				r.StartTime = 0;
+				r.ScheduleDirection = "Start";
+			}
+			r.WhatIf = false;
+			r.Finite = false;
+			r.SchedTypeCode = "JJ";
+			r.SetupComplete = false;
+			r.ProductionComplete = false;
+			r.OverrideMtlCon = false;
+			r.OverRideHistDateSetting = 2;
+			r.RecalcExpProdYld = false;
+			r.UseSchedulingMultiJob = false;
+			r.SchedulingMultiJobIgnoreLocks = false;
+			r.SchedulingMultiJobMinimizeWIP = false;
+			//r.SysRowID = hed.SysRowID;
+			r.RowMod = "A";
+			ds.ScheduleEngine.Rows.Add(r);
+			schedule.MoveJobItem(ds, out finished, out mess);
+		}
+	}
+
+	private void ChangeEmp(string call, string oldemp, string newemp, string job)
+	{
+		ServiceCallCenterAdapter adapterSC = new ServiceCallCenterAdapter(this.oTrans);
+        adapterSC.BOConnect();
+		adapterSC.GetByID(Convert.ToInt32(call));
+		DataRow[] drsDeleted1 = adapterSC.ServiceCallCenterData.FsTech.Select("CallNum = " + call + " AND EmpID = '" + oldemp + "'");
+		foreach (DataRow r in drsDeleted1)
+        {
+            adapterSC.Delete(r);
+        }
+		if (newemp != "UNASSIGN")
+		{
+			adapterSC.AssignTechnician(Convert.ToInt32(call),newemp,adapterSC.ServiceCallCenterData);
+			adapterSC.Update();
+		}
+		adapterSC.Dispose();
+
+		DataTable tblEmpResource = GetEmpResource(newemp);
+		if (tblEmpResource == null || tblEmpResource.Rows.Count == 0)
+		{
+			return;
+		}
+		DataTable tblJobOprDtl = GetJobOprDtl(job, tblEmpResource.Rows[0]["EmpBasic_ResourceGrpID"].ToString());
+		if (tblJobOprDtl == null || tblJobOprDtl.Rows.Count == 0)
+		{
+			return;
+		}
+		JobEntryAdapter adapterJob = new JobEntryAdapter(this.oTrans);
+        adapterJob.BOConnect();
+		adapterJob.GetByID(job);
+		
+		foreach (DataRow r in tblJobOprDtl.Rows)
+		{
+			DataRow[] matchrow = adapterJob.JobEntryData.JobOpDtl.Select("JobNum = '" + job + "' AND AssemblySeq = " + tblJobOprDtl.Rows[0]["JobOpDtl_AssemblySeq"].ToString() + " AND OprSeq = " + tblJobOprDtl.Rows[0]["JobOpDtl_OprSeq"].ToString() + " AND OpDtlSeq = " + tblJobOprDtl.Rows[0]["JobOpDtl_OpDtlSeq"].ToString());
+			matchrow[0]["ResourceID"] = tblEmpResource.Rows[0]["EmpBasic_ResourceID"].ToString();
+			adapterJob.Update();
+		}
+		adapterJob.Dispose();
+	}
+
+	private void epiUltraGridC1_InitializeRow(object sender, Infragistics.Win.UltraWinGrid.InitializeRowEventArgs args)
+	{
+		// ** Place Event Handling Code Here **
+		if (args.Row.Cells["EmpBasic_ImageID"].Value.ToString() != "")
+		{
+			ImageAdapter adapterIM = new ImageAdapter(this.oTrans);
+	        adapterIM.BOConnect();
+	        adapterIM.GetByID(args.Row.Cells["EmpBasic_ImageID"].Value.ToString());
+			byte[] imageBytes = Convert.FromBase64String(adapterIM.ImageData.Image.Rows[0]["ImageContent"].ToString());
+			MemoryStream ms = new MemoryStream(imageBytes);		
+			args.Row.Cells["Image"].Value = Image.FromStream(ms);
+			adapterIM.Dispose();
+		}
+	}
+
+	private void InitForm(System.Windows.Forms.Form frm)
+	{
+		System.Windows.Forms.Button btn1;
+		System.Windows.Forms.Button btn2;
+		System.Windows.Forms.Button btn3;
+		System.Windows.Forms.Button btn4;
+		Ice.Lib.Framework.EpiTextBox txt1;
+		Ice.Lib.Framework.EpiTextBox txt2;
+
+		btn1 = new System.Windows.Forms.Button();
+		btn2 = new System.Windows.Forms.Button();
+		btn3 = new System.Windows.Forms.Button();
+		btn4 = new System.Windows.Forms.Button();
+		txt1 = new Ice.Lib.Framework.EpiTextBox();
+		txt2 = new Ice.Lib.Framework.EpiTextBox();
+
+		btn1.Location = new System.Drawing.Point(10, 9);
+	    btn1.Name = "btn1";
+	    btn1.Size = new System.Drawing.Size(110, 22);
+	    btn1.TabIndex = 1;
+	    btn1.Text = "Resource Group";
+		btn1.UseVisualStyleBackColor = true;
+	    btn1.Click += new System.EventHandler(btn1_Click);
+
+		btn2.Location = new System.Drawing.Point(10, 39);
+	    btn2.Name = "btn2";
+	    btn2.Size = new System.Drawing.Size(110, 22);
+	    btn2.TabIndex = 3;
+	    btn2.Text = "Resource";
+		btn2.UseVisualStyleBackColor = true;
+	    btn2.Click += new System.EventHandler(btn2_Click);
+
+		btn3.Location = new System.Drawing.Point(100, 80);
+	    btn3.Name = "btn3";
+	    btn3.Size = new System.Drawing.Size(80, 22);
+	    btn3.TabIndex = 5;
+	    btn3.Text = "Add";
+		btn3.UseVisualStyleBackColor = true;
+	    btn3.Click += new System.EventHandler(btn3_Click);
+
+		btn4.Location = new System.Drawing.Point(190, 80);
+	    btn4.Name = "btn4";
+	    btn4.Size = new System.Drawing.Size(80, 22);
+	    btn4.TabIndex = 6;
+	    btn4.Text = "Cancel";
+		btn4.UseVisualStyleBackColor = true;
+	    btn4.Click += new System.EventHandler(btn4_Click);
+
+		txt1.Location = new System.Drawing.Point(130, 10);
+	    txt1.Name = "txt1";
+	    txt1.Size = new System.Drawing.Size(150, 20);
+	    txt1.TabIndex = 2;
+		txt1.ReadOnly = true;
+
+		txt2.Location = new System.Drawing.Point(130, 40);
+	    txt2.Name = "txt2";
+	    txt2.Size = new System.Drawing.Size(150, 20);
+	    txt2.TabIndex = 4;
+		txt2.ReadOnly = true;
+
+		frm.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+	    frm.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+	    frm.ClientSize = new System.Drawing.Size(300, 120);
+		frm.Controls.Add(btn1);
+		frm.Controls.Add(btn2);
+		frm.Controls.Add(btn3);
+		frm.Controls.Add(btn4);
+		frm.Controls.Add(txt1);
+		frm.Controls.Add(txt2);
+	    frm.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+	    frm.MaximizeBox = false;
+	    frm.MinimizeBox = false;
+	    frm.Name = "Resource";
+	    frm.ShowIcon = false;
+	    frm.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+	    frm.Text = "Adding Resource";
+
+		objExt = new AddRes()
+    	{
+	        resgrp = "",
+	        res = "",
+		};
+
+		txt1.DataBindings.Add("Value", objExt, "resgrp", true, DataSourceUpdateMode.OnPropertyChanged);
+		txt2.DataBindings.Add("Value", objExt, "res", true, DataSourceUpdateMode.OnPropertyChanged);
+	}
+
+	private void btn1_Click(object sender, System.EventArgs args)
+	{
+		SearchOnResourceGroupAdapterShowDialog(sender);
+	}
+
+	private void btn2_Click(object sender, System.EventArgs args)
+	{
+		if (objExt.resgrp == "")
+		{
+			MessageBox.Show("Please select a valid Resource Group first!", "Error");
+			return;
+		}
+		SearchOnResourceAdapterShowDialog(sender);
+	}
+
+	private void btn3_Click(object sender, System.EventArgs args)
+	{
+
+	}
+
+	private void btn4_Click(object sender, System.EventArgs args)
+	{
+		((sender as Control).Parent as System.Windows.Forms.Form).Close();
+	}
+
+	private void SearchOnResourceGroupAdapterShowDialog(object sender)
+	{
+		// Wizard Generated Search Method
+		// You will need to call this method from another method in custom code
+		// For example, [Form]_Load or [Button]_Click
+
+		bool recSelected;
+		string whereClause = string.Empty;
+		System.Data.DataSet dsResourceGroupAdapter = Ice.UI.FormFunctions.SearchFunctions.listLookup(this.oTrans, "ResourceGroupAdapter", out recSelected, true, whereClause);
+		if (recSelected)
+		{
+			System.Data.DataRow adapterRow = dsResourceGroupAdapter.Tables[0].Rows[0];
+			objExt.resgrp = adapterRow["ResourceGrpID"].ToString();
+			EpiTextBox txt1 = ((sender as Control).Parent as System.Windows.Forms.Form).Controls["txt1"] as EpiTextBox;
+			txt1.Text = adapterRow["ResourceGrpID"].ToString();
+		}
+	}
+
+	private void SearchOnResourceAdapterShowDialog(object sender)
+	{
+		// Wizard Generated Search Method
+		// You will need to call this method from another method in custom code
+		// For example, [Form]_Load or [Button]_Click
+
+		bool recSelected;
+		string whereClause = "ResourceGrpID = '" + objExt.resgrp + "'";
+		System.Data.DataSet dsResourceAdapter = Ice.UI.FormFunctions.SearchFunctions.listLookup(this.oTrans, "ResourceAdapter", out recSelected, true, whereClause);
+		if (recSelected)
+		{
+			System.Data.DataRow adapterRow = dsResourceAdapter.Tables[0].Rows[0];
+			objExt.res = adapterRow["ResourceID"].ToString();
+			EpiTextBox txt2 = ((sender as Control).Parent as System.Windows.Forms.Form).Controls["txt2"] as EpiTextBox;
+			txt2.Text = adapterRow["ResourceID"].ToString();
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
