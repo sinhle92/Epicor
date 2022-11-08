@@ -1,0 +1,1457 @@
+using (System.Transactions.TransactionScope txScope = IceDataContext.CreateDefaultTransactionScope()) 
+{
+  var opdt2 = (from opd2 in Db.JobOpDtl where opd2.Company == dtl.Company && opd2.JobNum == dtl.JobNum && opd2.AssemblySeq == opdt.AssemblySeq && opd2.OprSeq == opseq && opd2.OpDtlSeq == opdt.OpDtlSeq select opd2).FirstOrDefault();
+  if (opdt2 != null)
+  {
+    Db.JobOpDtl.Delete(opdt2);
+    Db.Validate(opdt2);
+  }txScope.Complete();
+}
+
+foreach (var tra in (from tr in ttPartTran where tr.TranType == "Mfg-Ven" select tr))
+{
+  tra.TranType = "MFG-CUS";
+  tra.MFGVEN_c = true;
+  if (tra.TranQty >= 0)
+  {
+    var sub = (from su in Db.SubShipD where su.Company == tra.Company && su.PackNum == tra.PackNum && su.PackLine == tra.PackLine select su).FirstOrDefault();
+    if (sub != null)
+    {
+      var job = (from jo in Db.JobAsmbl where jo.Company == tra.Company && jo.JobNum == sub.JobNum && jo.AssemblySeq == sub.AssemblySeq select jo).FirstOrDefault();
+      if (job != null)
+      {
+        tra.SubBurden_c = (job.TLABurdenCost + job.LLABurdenCost);
+        tra.SubLabor_c = (job.TLALaborCost + job.LLALaborCost);
+        tra.SubMaterial_c = (job.TLAMaterialCost + job.LLAMaterialCost);
+        tra.SubSubcontract_c = (job.TLASubcontractCost + job.LLASubcontractCost);
+        tra.SubMtlBurden_c = (job.TLAMtlBurCost + job.LLAMtlBurCost);
+      }
+    }
+  }
+  else
+  {
+    var tra2 = (from t2 in Db.PartTran where t2.Company == tra.Company && t2.MFGVEN_c == true && t2.PackNum == tra.PackNum && t2.PackLine == tra.PackLine && t2.TranQty >= 0 orderby t2.TranNum descending select t2).FirstOrDefault();
+    if (tra2 != null)
+    {
+      tra.SubBurden_c = -tra2.SubBurden_c;
+      tra.SubLabor_c = -tra2.SubLabor_c;
+      tra.SubMaterial_c = -tra2.SubMaterial_c;
+      tra.SubSubcontract_c = -tra2.SubSubcontract_c;
+      tra.SubMtlBurden_c = -tra2.SubMtlBurden_c;
+    }
+  }
+}
+//============
+var resGrp = (from rg in Db.ResourceGroup where rg.Company == cBur.Company && rg.ResourceGrpID == cBur.SourceID select rg).FirstOrDefault();
+        if(resGrp!=null)
+        {
+          resGrp.ExcRate_c = cBur.ExcRate_c;
+          Db.SaveChanges();
+        }
+//============
+foreach(var parttran in (from pt in ttPartTran where pt.TranType == "ADJ-CST" && pt.TranReference == "Standard Cost roll-up" && pt.ExcRate_c==0 select pt))
+{
+  var ud05 = (from ud in Db.UD05 where ud.Key1 == parttran.PartNum && ud.Company == parttran.Company && ud.Key3=="CWB-Post" select ud).FirstOrDefault();
+  if(ud05!=null)
+  {
+    parttran.ExcRate_c = ud05.Number01;
+  }
+}
+
+var tempIssueMtl = (from IssueMtl_Row in ttIssueReturn where IssueMtl_Row.ProcessID == "IssueMaterial" || IssueMtl_Row.ProcessID == "IssueMiscellaneousMaterial" select IssueMtl_Row).LastOrDefault(); 
+if (tempIssueMtl != null)
+{
+  // if  (tempIssueMtl.LotNum != "")
+  //{
+    var PartBin = (from PartBin_Row in Db.PartBin where string.Compare(PartBin_Row.Company, callContextClient.CurrentCompany, true) == 0 && PartBin_Row.PartNum == tempIssueMtl.PartNum && PartBin_Row.WarehouseCode == tempIssueMtl.FromWarehouseCode && PartBin_Row.BinNum == tempIssueMtl.FromBinNum && PartBin_Row.LotNum == tempIssueMtl.LotNum select PartBin_Row).FirstOrDefault();
+    if (PartBin != null)
+    {
+      if ((decimal)tempIssueMtl.TranQty > (decimal)PartBin.OnhandQty)
+      {
+        return false;
+      }
+      else
+      {
+       return true;
+      }
+    }
+    else
+    {
+      return false;
+    }
+  
+}
+else
+{
+  return true;
+}
+callContextBpmData.Checkbox01 = false;
+foreach(var or in (from ortt in ttOrderRel select ortt))
+{
+  foreach(var prod in (from prodtt in Db.JobProd where prodtt.Company == or.Company && prodtt.OrderNum == or.OrderNum && prodtt.OrderLine == or.OrderLine && prodtt.OrderRelNum == or.OrderRelNum select prodtt))
+  if(prod != null) 
+  {
+    var head = (from htt in Db.JobHead where htt.Company == prod.Company && htt.JobNum == prod.JobNum select htt).FirstOrDefault();
+    if(head != null) 
+    {
+      if(head.JobReleased == true)
+      {
+        callContextBpmData.Checkbox01 = true;
+      }
+      else
+      {
+        callContextBpmData.Checkbox01 = false;
+      }
+    }
+  }
+}
+
+foreach(var isr in (from ir in ttIssueReturn select ir))
+{
+  if(callContextBpmData.ShortChar01 != "")
+    {
+      int trannum = Convert.ToInt32(partTranPKs.Split('~')[2]);
+      var tra = (from tr in Db.PartTran where tr.Company == isr.Company && tr.TranNum == trannum select tr).FirstOrDefault();
+      string temp = tra.TranReference;
+      if(tra != null)
+        {
+          tra.TranReference = callContextBpmData.ShortChar01 + temp;
+          Db.SaveChanges();
+        }
+        callContextBpmData.ShortChar01 = "";
+    }
+ }
+
+ foreach (var isr in (from ir in ttIssueReturn select ir))
+{
+  if (callContextBpmData.ShortChar01 != "" || callContextBpmData.ShortChar02 != "" || callContextBpmData.ShortChar03 != "" || callContextBpmData.ShortChar04 != "")
+  {
+    int trannum = Convert.ToInt32(partTranPKs.Split('~')[2]);
+    var tra = (from tr in Db.PartTran where tr.Company == isr.Company && tr.TranNum == trannum select tr).FirstOrDefault();
+    if (tra != null)
+    {
+      tra.CostType_c = callContextBpmData.ShortChar03;
+      tra.CostCenter_c = callContextBpmData.ShortChar02;
+      tra.Machine_c = callContextBpmData.ShortChar01;
+      tra.MachineSerial_c = callContextBpmData.ShortChar04;
+      Db.SaveChanges();
+    }
+    callContextBpmData.ShortChar01 = "";
+    callContextBpmData.ShortChar02 = "";
+    callContextBpmData.ShortChar03 = "";
+    callContextBpmData.ShortChar04 = "";
+  }
+}
+foreach(var dt in (from ldt in ttLaborDtl select ldt))
+{
+  var dtl = (from ttdtl in Db.LaborDtl where dt.Company == ttdtl.Company && ttdtl.JobNum == dt.JobNum && ttdtl.PayrollDate == dt.PayrollDate select ttdtl).ToList().FirstOrDefault();
+  if(dtl != null)
+  {
+    var fnum =  (from fnumtt in Db.XFileAttch where fnumtt.Company == dt.Company   && dtl.LaborHedSeq.ToString() == fnumtt.Key1 && dtl.LaborDtlSeq.ToString() == fnumtt.Key2 && fnumtt.RelatedToFile == "LaborDtl" orderby fnumtt.XFileRefNum descending  select fnumtt).ToList().FirstOrDefault();
+    {
+      if(fnum != null)
+      {
+        var fref = (from reftt in Db.XFileRef where fnum.Company == reftt.Company && fnum.XFileRefNum == reftt.XFileRefNum select reftt).ToList().First();
+        if(fref != null)
+        {
+            dt.XFileName_c = fref.XFileName;
+        }
+      }
+    }
+  }
+  else
+  {
+    dt.XFileName_c = "";
+  }
+}
+
+foreach (var dtl in (from dt in ttJobProd select dt))
+{
+  foreach (var hed in (from he in Db.JobHead where he.Company == dtl.Company && he.JobNum == dtl.JobNum select he))
+  {
+    var asm = (from am in Db.JobAsmbl where am.Company == hed.Company && am.JobNum == hed.JobNum select am).FirstOrDefault();
+    if (asm != null)
+    {
+      var call = (from cal in Db.FSCallDt where cal.Company == dtl.Company && cal.JobNum == dtl.JobNum select cal).FirstOrDefault();
+      if (call != null)
+      {
+        var rev = (from re in Db.PartRev where re.Company == hed.Company && re.PartNum == hed.PartNum && re.Approved == true orderby re.EffectiveDate descending select re).FirstOrDefault();
+        if (rev != null)
+        {
+          string prev = "";
+          if (call.RevisionNum != "")
+          {
+            prev = call.RevisionNum;
+          }
+          else
+          {
+            prev = rev.RevisionNum;
+          }
+          using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+          {
+            string mess; string part; string partrev;
+            Job.PreGetDetails(hed.PartNum,prev,"JobHead",hed.JobNum,0,out mess,out part, out partrev,hed.SysRowID);
+            Job.GetDetails(hed.JobNum,0,"Method",0,0,"",0,hed.PartNum,prev,"",true,false,false,false);
+          }
+        }
+      }
+    }
+  }
+}
+
+foreach (var hed in (from he in ttInvcHead select he))
+{
+  if (hed.CurrencyCode == "USD")
+  {
+    hed.ExcRate_c = hed.ExchangeRate;
+  }
+  else
+  {
+    decimal totline = 0;
+    decimal exrate = 0;
+    var dtl = (from dt in Db.InvcDtl where dt.Company == hed.Company && dt.InvoiceNum == hed.InvoiceNum group dt by new { dt.Company, dt.InvoiceNum } into g select new { comp = g.Key.Company, invc =  g.Key.InvoiceNum, lineamt = g.Sum(x => x.ExtPrice), disamt = g.Sum(x => x.Discount), chrgamt = g.Sum(x => x.TotalMiscChrg) }).FirstOrDefault();
+    if (dtl != null)
+    {
+      totline = dtl.lineamt - dtl.disamt + dtl.chrgamt;
+    }
+    if (totline != 0)
+    {
+      foreach (var lin in (from li in Db.InvcDtl where li.Company == hed.Company && li.InvoiceNum == hed.InvoiceNum select li))
+      {
+        exrate += ((lin.ExtPrice - lin.Discount + lin.TotalMiscChrg)/totline)*lin.ExcRate_c;
+      }
+      hed.ExcRate_c = exrate;
+    }
+    else
+    {
+      var exRate = (from exr in Db.CurrExRate where exr.Company == hed.Company && exr.EffectiveDate <= hed.InvoiceDate && exr.RateGrpCode == "PROD" && exr.SourceCurrCode == "USD" && exr.TargetCurrCode == "VND" orderby exr.EffectiveDate descending select exr).FirstOrDefault();
+      if(exRate!=null)
+      {
+         hed.ExcRate_c = Convert.ToDecimal(exRate.CurrentRate);
+      }
+    }
+  }
+}
+foreach (var dtl in (from dt in ttJobProd select dt))
+{
+  foreach (var hed in (from he in Db.JobHead where he.Company == dtl.Company && he.JobNum == dtl.JobNum select he))
+  {
+    var asm = (from am in Db.JobAsmbl where am.Company == hed.Company && am.JobNum == hed.JobNum select am).FirstOrDefault();
+    if (asm != null)
+    {
+      var call = (from cal in Db.FSCallDt where cal.Company == dtl.Company && cal.JobNum == dtl.JobNum select cal).FirstOrDefault();
+      if (call != null)
+      {
+        var rev = (from re in Db.PartRev where re.Company == hed.Company && re.PartNum == hed.PartNum && re.Approved == true orderby re.EffectiveDate descending select re).FirstOrDefault();
+        if (rev != null)
+        {
+          string prev = "";
+          if (call.RevisionNum != "")
+          {
+            prev = call.RevisionNum;
+          }
+          else
+          {
+            prev = rev.RevisionNum;
+          }
+          using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+          {
+            string mess; string part; string partrev;
+            Job.PreGetDetails(hed.PartNum,prev,"JobHead",hed.JobNum,0,out mess,out part, out partrev,hed.SysRowID);
+            Job.GetDetails(hed.JobNum,0,"Method",0,0,"",0,hed.PartNum,prev,"",true,false,false,false);
+          }
+        }
+      }
+    }
+  }
+}
+
+if(callContextBpmData != null && callContextBpmData.Checkbox01 == true){
+  foreach(var calldtl in (from cal in ttFSCallDt where cal.JobNum != "" && cal.RowMod=="U" select cal))
+  {
+    //this.PublishInfoMessage(calldtl.CallNum.ToString(), Ice.Common.BusinessObjectMessageType.Information, Ice.Bpm.InfoMessageDisplayMode.Individual, "SalesOrder", "Update");
+    var jobprod = (from jp in Db.JobProd where jp.Company == calldtl.Company && jp.JobNum == calldtl.JobNum select jp).FirstOrDefault();
+    if(jobprod != null)
+    {
+      jobprod.ProdQty = calldtl.CallQty;
+      Db.SaveChanges();
+    }
+    var job = (from j in Db.JobHead where j.Company == calldtl.Company && j.JobNum == calldtl.JobNum && j.JobType == "SRV" select j).FirstOrDefault();
+    if(job!=null)
+    {
+      job.ProdQty = calldtl.CallQty;
+      Db.SaveChanges();
+    }
+  }
+  callContextBpmData.Checkbox01 = false;
+}
+//  Reset ProdQty
+// Pre
+if(callContextBpmData != null && callContextBpmData.Checkbox01 == true)
+{
+  string joblist = "";
+  string qtylist = "";
+  string est = "";
+  string docest = "";
+  foreach(var calldtl in (from cal in ttFSCallDt where cal.JobNum != "" && cal.RowMod=="U" select cal))
+  {
+    joblist += calldtl.JobNum + "~";
+    qtylist += calldtl.CallQty.ToString() + "~";
+    est += calldtl.TotEstMaterial.ToString() + "~";
+    docest += calldtl.DocTotEstMaterial.ToString() + "~";
+  }
+  if (joblist.Length > 0)
+  {
+    callContextBpmData.Character01 = joblist.SubString(0,joblist.Length - 1);
+    callContextBpmData.Character02 = qtylist.SubString(0,qtylist.Length - 1);
+    callContextBpmData.Character03 = est.SubString(0,est.Length - 1); 
+    callContextBpmData.Character04 = docest.SubString(0,docest.Length - 1); 
+  }
+}
+// Post
+if(callContextBpmData != null && callContextBpmData.Checkbox01 == true && callContextBpmData.Character01 != "")
+{
+  string[] jobl = callContextBpmData.Character01.Split('~');
+  string[] qty = callContextBpmData.Character02.Split('~');
+  string[] est = callContextBpmData.Character03.Split('~');
+  string[] doc = callContextBpmData.Character04.Split('~');
+  int chk = 0;
+  foreach (string jo in jobl)
+  {
+    var jobprod = (from jp in Db.JobProd where jp.Company == callContextClient.CurrentCompany && jp.JobNum == jo.ToString() select jp).FirstOrDefault();
+    if(jobprod != null && jobprod.ProdQty != Convert.ToDecimal(qty[chk].ToString()))
+    {
+      jobprod.ProdQty = Convert.ToDecimal(qty[chk].ToString());
+      Db.SaveChanges();
+      var dtl = (from dt in Db.FSCallDt where dt.Company == jobprod.Company && dt.JobNum == jobprod.JobNum select dt).FirstOrDefault();
+      if (dtl != null)
+      {
+        dtl.Rpt2TotEstMaterial = Convert.ToDecimal(est[chk].ToString());
+        dtl.Rpt3TotEstMaterial = Convert.ToDecimal(doc[chk].ToString());
+      }
+    }
+    /*var job = (from j in Db.JobHead where j.Company == jobprod.Company && j.JobNum == jobprod.JobNum && j.JobType == "SRV" select j).FirstOrDefault();
+    if(job!=null)
+    {
+      job.ProdQty = Convert.ToDecimal(qty[chk].ToString());
+      Db.SaveChanges();
+    }*/
+    chk += 1;
+  }
+  callContextBpmData.Character01 = "";
+  callContextBpmData.Character02 = "";
+  callContextBpmData.Character03 = "";
+  callContextBpmData.Character04 = "";
+  callContextBpmData.Checkbox01 = false;
+}
+
+foreach (var dtl in (from dt in ttLaborDtl select dt))
+{
+   var call = (from hd in Db.FSCallhd where hd.Company == dtl.Company && hd.CallNum == dtl.CallNum select hd).FirstOrDefault();
+  
+    if(call != null)
+    {
+      if(call.CallCode == "N" && call.AfterHours_c == true)
+      {
+       return true;
+      }
+      return false;
+    }
+  return false;
+}
+foreach (var dtl in (from dt in ttLaborDtl where dt.RowMod == "A" select dt))
+{
+   var call = (from hd in Db.FSCallhd where hd.Company == dtl.Company && hd.CallNum == dtl.CallNum select hd).FirstOrDefault();
+   var time = (from lb in Db.LaborDtl where lb.Company == dtl.Company && lb.JobNum == dtl.JobNum select lb).FirstOrDefault();
+  
+    if(call != null)
+    {
+       if(time != null) // Submit time 2
+      {
+        if((call.CallCode == "N" || call.CallCode == "PMP") && call.AfterHours_c == false && dtl.ExpenseCode != "LSN")
+        {
+          callContextBpmData.Checkbox04 = true;
+          callContextBpmData.Character04 = "Please enter Expense Code Service Labor Normal labor hour before enter additional time with Expense Code: Service Labor Normal";
+        }
+        if((call.CallCode == "N" || call.CallCode == "PMP") && call.AfterHours_c == true  && dtl.ExpenseCode != "LSAH")
+        {
+          callContextBpmData.Checkbox05 = true;
+          callContextBpmData.Character05 = "Please enter Expense Code: Call Out AH 30 for 0.5 hour before enter additional time with Expense Code: Service Labor AH";
+        }
+      }
+      else { // Submit time 1
+        if(call.CallCode == "N" && call.AfterHours_c == false && dtl.ExpenseCode != "LSCO")
+        {
+            callContextBpmData.Checkbox01 = true;
+            callContextBpmData.Character01 = "Please enter Expense Code Call Out Normal 30 for 0.5 hour before enter additional time with Expense Code: Service Labor Normal";
+        }
+        if(call.CallCode == "N" && call.AfterHours_c == true  && dtl.ExpenseCode != "LSAHCO")
+        {
+            callContextBpmData.Checkbox02 = true;
+            callContextBpmData.Character02 = "Please enter Expense Code: Call Out AH 30 for 0.5 hour before enter additional time with Expense Code: Service Labor AH";
+        }
+        if(call.CallCode == "PMP" && dtl.ExpenseCode != "LSPMCE")
+        {
+            callContextBpmData.Checkbox03 = true;
+            callContextBpmData.Character03 = "Please enter Expense Code: Service Labor PMP 60 for 1 hour before enter additional time with Expense Code: Service Labor AH";
+        }
+      }
+    }
+}
+if(callContextBpmData.Character01 != "")
+{
+  System.Threading.Tasks.Task.Run(()=>{
+    Thread.Sleep(1000);
+    string[] jobl = callContextBpmData.Character01.Split('~');
+    string[] qty = callContextBpmData.Character02.Split('~');
+    string[] est = callContextBpmData.Character03.Split('~');
+    string[] doc = callContextBpmData.Character04.Split('~');
+    int chk = 0;
+    foreach (string jo in jobl)
+    {
+      var jobprod = (from jp in Db.JobProd where jp.Company == callContextClient.CurrentCompany && jp.JobNum == jo.ToString() select jp).FirstOrDefault();
+      if(jobprod != null && jobprod.ProdQty != Convert.ToDecimal(qty[chk].ToString()))
+      {
+        jobprod.ProdQty = Convert.ToDecimal(qty[chk].ToString());
+        Db.SaveChanges();
+        var dtl = (from dt in Db.FSCallDt where dt.Company == jobprod.Company && dt.JobNum == jobprod.JobNum select dt).FirstOrDefault();
+        if (dtl != null)
+        {
+          dtl.Rpt2TotEstMaterial = Convert.ToDecimal(est[chk].ToString());
+          dtl.Rpt3TotEstMaterial = Convert.ToDecimal(doc[chk].ToString());
+        }
+      }
+      /*var job = (from j in Db.JobHead where j.Company == jobprod.Company && j.JobNum == jobprod.JobNum && j.JobType == "SRV" select j).FirstOrDefault();
+      if(job!=null)
+      {
+        job.ProdQty = Convert.ToDecimal(qty[chk].ToString());
+        Db.SaveChanges();
+      }*/
+   
+      chk += 1;
+    }
+    Db.SaveChanges();
+    callContextBpmData.Character01 = "";
+    callContextBpmData.Character02 = "";
+    callContextBpmData.Character03 = "";
+    callContextBpmData.Character04 = "";
+  });
+}
+
+foreach(var tec in (from te in ttFsTech where te.RowMod == "A" select te))
+{
+  var call = (from cal in Db.FSCallhd where cal.Company == tec.Company && cal.CallNum == tec.CallNum select cal).FirstOrDefault();
+  if (call != null)
+  {
+      var emp = (from em in Db.EmpBasic where em.Company == call.Company && em.EmpID == tec.EmpID select em).FirstOrDefault();
+      if (emp != null)
+      {
+        var res = (from re in Db.Resource where re.Company == call.Company && re.ResourceID == emp.ResourceID select re).FirstOrDefault();
+        if (res != null)
+        {
+          int lin2 = 0;
+          int lin3 = 0;
+          var dtl1 = (from dt1 in Db.FSCallDt where dt1.Company == call.Company && dt1.CallNum == call.CallNum && dt1.JobNum != "" select dt1).FirstOrDefault();
+          if (dtl1 != null)
+          {
+            lin2 = dtl1.CallLine;
+            var hed = (from he in Db.JobHead where he.Company == dtl1.Company && he.JobNum == dtl1.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+              {
+                string op = "SM";
+                var ds = Job.GetByID(hed.JobNum);
+                Job.GetNewJobOper(ref ds,hed.JobNum,0);
+                string mess = "";
+                Job.ChangeJobOperOpCode(op, out mess, ref ds);
+                ds.JobOper[ds.JobOper.Count - 1]["SchedComment"] = emp.ResourceGrpID+"~"+emp.ResourceID+"~"+res.Description;
+                ds.JobOper[ds.JobOper.Count - 1]["SchedRelation"] = "SS";
+                Job.Update(ref ds);
+              }
+            }
+          }
+          var dtl2 = (from dt2 in Db.FSCallDt where dt2.Company == call.Company && dt2.CallNum == call.CallNum && dt2.JobNum != "" && dt2.CallLine != lin2 select dt2).FirstOrDefault();
+          if (dtl2 != null)
+          {
+            lin3 = dtl2.CallLine;
+            var hed = (from he in Db.JobHead where he.Company == dtl2.Company && he.JobNum == dtl2.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+              {
+                string op = "SM";
+                var ds = Job.GetByID(hed.JobNum);
+                Job.GetNewJobOper(ref ds,hed.JobNum,0);
+                string mess = "";d
+                Job.ChangeJobOperOpCode(op, out mess, ref ds);
+                ds.JobOper[ds.JobOper.Count - 1]["SchedComment"] = emp.ResourceGrpID+"~"+emp.ResourceID+"~"+res.Description;
+                ds.JobOper[ds.JobOper.Count - 1]["SchedRelation"] = "SS";
+                Job.Update(ref ds);
+              }
+            }
+          }
+          var dtl3 = (from dt3 in Db.FSCallDt where dt3.Company == call.Company && dt3.CallNum == call.CallNum && dt3.JobNum != "" && dt3.CallLine != lin2 && dt3.CallLine != lin3 select dt3).FirstOrDefault();
+          if (dtl3 != null)
+          {
+            var hed = (from he in Db.JobHead where he.Company == dtl3.Company && he.JobNum == dtl3.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+              {
+                string op = "SM";
+                var ds = Job.GetByID(hed.JobNum);
+                Job.GetNewJobOper(ref ds,hed.JobNum,0);
+                string mess = "";
+                Job.ChangeJobOperOpCode(op, out mess, ref ds);
+                ds.JobOper[ds.JobOper.Count - 1]["SchedComment"] = emp.ResourceGrpID+"~"+emp.ResourceID+"~"+res.Description;
+                ds.JobOper[ds.JobOper.Count - 1]["SchedRelation"] = "SS";
+                Job.Update(ref ds);
+              }
+            }
+          }
+        }
+      }
+    
+  }
+}
+
+foreach(var tec in (from te in ttFsTech where te.RowMod == "A" select te))
+{
+  var call = (from cal in Db.FSCallhd where cal.Company == tec.Company && cal.CallNum == tec.CallNum select cal).FirstOrDefault();
+  if (call != null)
+  {
+      var emp = (from em in Db.EmpBasic where em.Company == call.Company && em.EmpID == tec.EmpID select em).FirstOrDefault();
+      if (emp != null)
+      {
+        var res = (from re in Db.Resource where re.Company == call.Company && re.ResourceID == emp.ResourceID select re).FirstOrDefault();
+        if (res != null)
+        {
+          int lin2 = 0;
+          int lin3 = 0;
+          var dtl1 = (from dt1 in Db.FSCallDt where dt1.Company == call.Company && dt1.CallNum == call.CallNum && dt1.JobNum != "" select dt1).FirstOrDefault();
+          if (dtl1 != null)
+          {
+            lin2 = dtl1.CallLine;
+            var hed = (from he in Db.JobHead where he.Company == dtl1.Company && he.JobNum == dtl1.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+              {
+                string op = "SM";
+                var ds = Job.GetByID(hed.JobNum);
+                Job.GetNewJobOper(ref ds,hed.JobNum,0);
+                string mess = "";
+                Job.ChangeJobOperOpCode(op, out mess, ref ds);
+                ds.JobOper[ds.JobOper.Count - 1]["SchedComment"] = emp.ResourceGrpID+"~"+emp.ResourceID+"~"+res.Description;
+                ds.JobOper[ds.JobOper.Count - 1]["SchedRelation"] = "SS";
+                Job.Update(ref ds);
+              }
+            }
+          }
+          var dtl2 = (from dt2 in Db.FSCallDt where dt2.Company == call.Company && dt2.CallNum == call.CallNum && dt2.JobNum != "" && dt2.CallLine != lin2 select dt2).FirstOrDefault();
+          if (dtl2 != null)
+          {
+            lin3 = dtl2.CallLine;
+            var hed = (from he in Db.JobHead where he.Company == dtl2.Company && he.JobNum == dtl2.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+              {
+                string op = "SM";
+                var ds = Job.GetByID(hed.JobNum);
+                Job.GetNewJobOper(ref ds,hed.JobNum,0);
+                string mess = "";
+                Job.ChangeJobOperOpCode(op, out mess, ref ds);
+                ds.JobOper[ds.JobOper.Count - 1]["SchedComment"] = emp.ResourceGrpID+"~"+emp.ResourceID+"~"+res.Description;
+                ds.JobOper[ds.JobOper.Count - 1]["SchedRelation"] = "SS";
+                Job.Update(ref ds);
+              }
+            }
+          }
+          var dtl3 = (from dt3 in Db.FSCallDt where dt3.Company == call.Company && dt3.CallNum == call.CallNum && dt3.JobNum != "" && dt3.CallLine != lin2 && dt3.CallLine != lin3 select dt3).FirstOrDefault();
+          if (dtl3 != null)
+          {
+            var hed = (from he in Db.JobHead where he.Company == dtl3.Company && he.JobNum == dtl3.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+              {
+                string op = "SM";
+                var ds = Job.GetByID(hed.JobNum);
+                Job.GetNewJobOper(ref ds,hed.JobNum,0);
+                string mess = "";
+                Job.ChangeJobOperOpCode(op, out mess, ref ds);
+                ds.JobOper[ds.JobOper.Count - 1]["SchedComment"] = emp.ResourceGrpID+"~"+emp.ResourceID+"~"+res.Description;
+                ds.JobOper[ds.JobOper.Count - 1]["SchedRelation"] = "SS";
+                Job.Update(ref ds);
+              }
+            }
+          }
+        }
+      }
+    
+  }
+}
+
+foreach (var hed in (from he in ttFSCallhd select he))
+{
+  //this.PublishInfoMessage(hed.RowMod.ToString(), Ice.Common.BusinessObjectMessageType.Information, Ice.Bpm.InfoMessageDisplayMode.Individual, "SalesOrder", "Update");
+  using (var ARInv = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.ARInvoiceSvcContract>(Db, true))
+  {
+    string groupID = "FS" + DateTime.Now.ToString("ddMMyy");
+    bool result = false;GroupID
+    ARInv.InvcGrpExists(groupID, out result);
+    if (result == false)
+    {
+      using (var InvGrp = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.InvcGrpSvcContract>(Db, true))
+      {
+        plant = "MfgSys",
+        orderNum = 6561,
+        orderLine = 1,
+        orderRelNum = 1,
+        warehouseCode = "CHI",
+        binNum = "00-00-08",
+        supplyJobNum = "",
+        lotNum = "2",
+        pcID = "PG286"
+        var dsGrp = new Erp.Tablesets.InvcGrpTableset();
+        InvGrp.GetNewInvcGrp(ref dsGrp);
+        dsGrp.InvcGrp[0]["GroupID"] = groupID;
+        InvGrp.Update(ref dsGrp);
+      }
+    }
+    int inv; decimal amt; string jobs;
+    var dsInv = new Erp.Tablesets.ARInvoiceTableset();
+    ARInv.GetFSCallsJob(groupID, "", "", hed.CallNum.ToString(), callContextClient.CurrentPlant.ToString(), out inv, out amt, out jobs);
+    var invGrp = (from gr in Db.InvcGrp where gr.Company == hed.Company && gr.GroupID == groupID select gr).FirstOrDefault();
+    if(invGrp != null)
+    {
+      invGrp.ActiveUserID = "";
+      Db.SaveChanges();
+    }
+  }
+}
+// ScheduleEngineImpl
+foreach(var JobHedr in ttJobHead)
+{
+  var plant = (from pl in Db.Plant where pl.Company == JobHedr.Company && pl.Plant1 == JobHedr.Plant select pl).FirstOrDefault(); 
+    if(plant.SchedulingDirection == "End")
+    {
+        return true;
+    }
+}
+return false;
+
+
+ var hed = (from he in ttJobHead select he).LastOrDefault();
+ var fscal =(from fs in Db.FSCallhd where fs.Company == callContextClient.CurrentCompany && fs.CallNum == hed.CallNum select fs).FirstOrDefault();
+ if(fscal != null)
+ {
+  if(fscal.SchedDate != null)
+  {
+    using(var schedule = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.ScheduleEngineSvcContract>(Db, true))
+    {
+      string mess; bool finished = false;
+      var ds = new Erp.Tablesets.ScheduleEngineTableset();
+      Erp.Tablesets.ScheduleEngineRow r = new Erp.Tablesets.ScheduleEngineRow();
+      r.Company = callContextClient.CurrentCompany;
+      r.JobNum = hed.JobNum;
+      r.AssemblySeq = 0;
+      r.OprSeq = 0;
+      //r.StartDate = Convert.ToDateTime(fscal.SchedDate);
+      //r.StartTime = Convert.ToInt32(fscal.SchedTime);
+      r.EndDate =  Convert.ToDateTime(fscal.SchedDate);
+      r.EndTime = Convert.ToInt32(fscal.SchedTime);
+      r.WhatIf = false;
+      r.Finite = false;
+      r.SchedTypeCode = "JJ";
+      r.ScheduleDirection = "End";
+      r.SetupComplete = false;
+      r.ProductionComplete = false;
+      r.OverrideMtlCon = false;
+      r.OverRideHistDateSetting = 2;
+      r.RecalcExpProdYld = false;
+      r.UseSchedulingMultiJob = false;
+      r.SchedulingMultiJobIgnoreLocks = false;
+      r.SchedulingMultiJobMinimizeWIP = false;
+      //r.SysRowID = hed.SysRowID;
+      r.RowMod = "A";
+      ds.ScheduleEngine.Add(r);
+      schedule.MoveJobItem(ds, out finished, out mess);
+    }
+  }
+ }
+
+  var hed = (from he in ttJobHead select he).LastOrDefault();
+ var fscal =(from fs in Db.FSCallhd where fs.Company == callContextClient.CurrentCompany && fs.CallNum == hed.CallNum select fs).FirstOrDefault();
+ if(fscal != null)
+ {
+  if(fscal.SchedDate != null)
+  {
+    using(var schedule = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.ScheduleEngineSvcContract>(Db, true))
+    {
+      string mess; bool finished = false;
+      var ds = new Erp.Tablesets.ScheduleEngineTableset();
+      Erp.Tablesets.ScheduleEngineRow r = new Erp.Tablesets.ScheduleEngineRow();
+      r.Company = callContextClient.CurrentCompany;
+      r.JobNum = hed.JobNum;
+      r.AssemblySeq = 0;
+      r.OprSeq = 0;
+      r.StartDate = Convert.ToDateTime(fscal.SchedDate);
+      r.StartTime = Convert.ToInt32(fscal.SchedTime);
+      //r.EndDate =  Convert.ToDateTime(fscal.SchedDate);
+      //r.EndTime = Convert.ToInt32(fscal.SchedTime);
+      r.WhatIf = false;
+      r.Finite = false;
+      r.SchedTypeCode = "JJ";
+      r.ScheduleDirection = "Start";
+      r.SetupComplete = false;
+      r.ProductionComplete = false;
+      r.OverrideMtlCon = false;
+      r.OverRideHistDateSetting = 2;
+      r.RecalcExpProdYld = false;
+      r.UseSchedulingMultiJob = false;
+      r.SchedulingMultiJobIgnoreLocks = false;
+      r.SchedulingMultiJobMinimizeWIP = false;
+      //r.SysRowID = hed.SysRowID;
+      r.RowMod = "A";
+      ds.ScheduleEngine.Add(r);
+      schedule.MoveJobItem(ds, out finished, out mess);
+    }
+  }
+ }
+
+ string[] short1 = callContextBpmData.ShortChar01.Split('~');
+string[] short2 = callContextBpmData.ShortChar02.Split('~');
+string[] short3 = callContextBpmData.ShortChar03.Split('~');
+int chk = 0;
+foreach(string r in short1)
+{
+var opr = (from op in Db.JobOper where op.JobNum == r && op.AssemblySeq == Convert.ToInt32(short2[chk]) && op.OprSeq == Convert.ToInt32(short3[chk]) select op).FirstOrDefault();
+if (opr != null)
+{
+  var hed = (from he in Db.JobHead where he.Company == opr.Company && he.JobNum == opr.JobNum && he.JobType == "SRV" select he).FirstOrDefault();
+  if (hed != null)
+  {
+    var dtl1 = (from dt1 in Db.FSCallDt where dt1.Company == hed.Company && dt1.JobNum == hed.JobNum select dt1).FirstOrDefault();
+    if (dtl1 != null)
+    {
+      using (System.Transactions.TransactionScope txScope = IceDataContext.CreateDefaultTransactionScope()) {
+      foreach(var tec in (from tec in Db.FsTech where tec.Company == hed.Company && tec.CallNum == dtl1.CallNum select tec))
+      {
+        var emp = (from em in Db.EmpBasic where em.Company == hed.Company && em.EmpID == tec.EmpID select em).FirstOrDefault();
+        if (emp != null)
+        {
+          var res = (from re in Db.Resource where re.Company == hed.Company && re.ResourceID == emp.ResourceID select re).FirstOrDefault();
+          if (res != null)
+          {
+            var odt = (from od in Db.JobOpDtl where od.Company == dtl1.Company && od.JobNum == dtl1.JobNum && od.AssemblySeq == opr.AssemblySeq && od.OprSeq == opr.OprSeq && od.ResourceGrpID == emp.ResourceGrpID && od.ResourceID == "" select od).FirstOrDefault();
+            if (odt == null)
+            {
+              var odt2 = (from od2 in Db.JobOpDtl where od2.Company == dtl1.Company && od2.JobNum == dtl1.JobNum && od2.AssemblySeq == opr.AssemblySeq && od2.OprSeq == opr.OprSeq && od2.ResourceGrpID == emp.ResourceGrpID && od2.ResourceID == emp.ResourceID select od2).FirstOrDefault();
+              if (odt2 == null)
+              {
+              using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+              {
+                /*string op = "SM";
+                var ds = Job.GetByID(hed.JobNum);
+                Job.GetNewJobOper(ref ds,hed.JobNum,0);
+                string mess = "";
+                Job.ChangeJobOperOpCode(op, out mess, ref ds);
+                //ds.JobOper[ds.JobOper.Count - 1]["SchedComment"] = emp.ResourceGrpID+"~"+emp.ResourceID+"~"+res.Description;
+                ds.JobOper[ds.JobOper.Count - 1]["SchedRelation"] = "SS";
+                Job.Update(ref ds);*/
+                var ds = Job.GetByID(hed.JobNum);
+                Job.GetNewJobOpDtl(ref ds,hed.JobNum,0, opr.OprSeq);
+                ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceGrpID"] = emp.ResourceGrpID;
+                Job.ChangeJobOpDtlResourceGrpID(emp.ResourceGrpID, ref ds);
+                ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceID"] = emp.ResourceID;
+                ds.JobOpDtl[ds.JobOpDtl.Count - 1]["OpDtlDesc"] = res.Description;
+                Job.Update(ref ds);
+              }
+              }
+            }
+            else
+            {
+              odt.ResourceID = emp.ResourceID.ToString();
+              odt.OpDtlDesc = res.Description.ToString();
+              Db.SaveChanges();        
+            }
+          }
+        }
+      }txScope.Complete();
+      }
+    }
+  }
+}
+chk += 1;
+}
+callContextBpmData.ShortChar01 = "";
+callContextBpmData.Number01 = 0;
+callContextBpmData.Number02 = 0;
+
+try{
+foreach(var tec in (from te in ttFsTech where te.RowMod == "A" select te))
+{
+  var call = (from cal in Db.FSCallhd where cal.Company == tec.Company && cal.CallNum == tec.CallNum select cal).FirstOrDefault();
+  if (call != null)
+  {
+      var emp = (from em in Db.EmpBasic where em.Company == call.Company && em.EmpID == tec.EmpID select em).FirstOrDefault();
+      if (emp != null)
+      {
+        var res = (from re in Db.Resource where re.Company == call.Company && re.ResourceID == emp.ResourceID select re).FirstOrDefault();
+        if (res != null)
+        {
+          int lin2 = 0;
+          int lin3 = 0;
+          var dtl1 = (from dt1 in Db.FSCallDt where dt1.Company == call.Company && dt1.CallNum == call.CallNum && dt1.JobNum != "" select dt1).FirstOrDefault();
+          if (dtl1 != null)
+          {
+            lin2 = dtl1.CallLine;
+            var hed = (from he in Db.JobHead where he.Company == dtl1.Company && he.JobNum == dtl1.JobNum && he.CallNum == dtl1.CallNum && he.CallLine == lin2 select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (System.Transactions.TransactionScope txScope = IceDataContext.CreateDefaultTransactionScope()) {
+              foreach(var opr in (from op in Db.JobOper where op.Company == dtl1.Company && op.JobNum == dtl1.JobNum && op.AssemblySeq == 0 select op))
+              {
+                var odt = (from od in Db.JobOpDtl where od.Company == dtl1.Company && od.JobNum == dtl1.JobNum && od.AssemblySeq == 0 && od.OprSeq == opr.OprSeq && od.ResourceGrpID == emp.ResourceGrpID && od.ResourceID == "" select od).FirstOrDefault();
+                if (odt == null)
+                {
+                  using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+                  {
+                    var ds = Job.GetByID(hed.JobNum);
+                    Job.GetNewJobOpDtl(ref ds,hed.JobNum,0, opr.OprSeq);
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceGrpID"] = emp.ResourceGrpID;
+                    Job.ChangeJobOpDtlResourceGrpID(emp.ResourceGrpID, ref ds);
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceID"] = emp.ResourceID;
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["OpDtlDesc"] = res.Description;
+                    Job.Update(ref ds);
+                  }
+                }
+                else
+                {
+                  odt.ResourceID = emp.ResourceID.ToString();
+                  odt.OpDtlDesc = res.Description.ToString();
+                  Db.SaveChanges();        
+                }
+              }txScope.Complete();
+              }
+            }
+          }
+          var dtl2 = (from dt2 in Db.FSCallDt where dt2.Company == call.Company && dt2.CallNum == call.CallNum && dt2.JobNum != "" && dt2.CallLine != lin2 select dt2).FirstOrDefault();
+          if (dtl2 != null)
+          {
+            lin3 = dtl2.CallLine;
+            var hed = (from he in Db.JobHead where he.Company == dtl2.Company && he.JobNum == dtl2.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (System.Transactions.TransactionScope txScope = IceDataContext.CreateDefaultTransactionScope()) {
+              foreach(var opr in (from op in Db.JobOper where op.Company == dtl2.Company && op.JobNum == dtl2.JobNum && op.AssemblySeq == 0 select op))
+              {
+                var odt = (from od in Db.JobOpDtl where od.Company == dtl2.Company && od.JobNum == dtl2.JobNum && od.AssemblySeq == 0 && od.OprSeq == opr.OprSeq && od.ResourceGrpID == emp.ResourceGrpID && od.ResourceID == "" select od).FirstOrDefault();
+                if (odt == null)
+                {
+                  using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+                  {
+                    var ds = Job.GetByID(hed.JobNum);
+                    Job.GetNewJobOpDtl(ref ds,hed.JobNum,0, opr.OprSeq);
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceGrpID"] = emp.ResourceGrpID;
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceID"] = emp.ResourceID;
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["OpDtlDesc"] = res.Description;
+                    Job.Update(ref ds);
+                  }
+                }
+                else
+                {
+                  odt.ResourceID = emp.ResourceID.ToString();
+                  odt.OpDtlDesc = res.Description.ToString();
+                  Db.SaveChanges();        
+                }
+              }txScope.Complete();
+              }
+            }
+          }
+          var dtl3 = (from dt3 in Db.FSCallDt where dt3.Company == call.Company && dt3.CallNum == call.CallNum && dt3.JobNum != "" && dt3.CallLine != lin2 && dt3.CallLine != lin3 select dt3).FirstOrDefault();
+          if (dtl3 != null)
+          {
+            var hed = (from he in Db.JobHead where he.Company == dtl3.Company && he.JobNum == dtl3.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (System.Transactions.TransactionScope txScope = IceDataContext.CreateDefaultTransactionScope()) {
+              foreach(var opr in (from op in Db.JobOper where op.Company == dtl3.Company && op.JobNum == dtl3.JobNum && op.AssemblySeq == 0 select op))
+              {
+                var odt = (from od in Db.JobOpDtl where od.Company == dtl3.Company && od.JobNum == dtl3.JobNum && od.AssemblySeq == 0 && od.OprSeq == opr.OprSeq && od.ResourceGrpID == emp.ResourceGrpID && od.ResourceID == "" select od).FirstOrDefault();
+                if (odt == null)
+                {
+                  using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+                  {
+                    var ds = Job.GetByID(hed.JobNum);
+                    Job.GetNewJobOpDtl(ref ds,hed.JobNum,0, opr.OprSeq);
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceGrpID"] = emp.ResourceGrpID;
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceID"] = emp.ResourceID;
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["OpDtlDesc"] = res.Description;
+                    Job.Update(ref ds);
+                  }
+                }
+                else
+                {
+                  odt.ResourceID = emp.ResourceID.ToString();
+                  odt.OpDtlDesc = res.Description.ToString();
+                  Db.SaveChanges();        
+                }
+              }txScope.Complete();
+              }
+            }
+          }
+        }
+      }  
+  } 
+}
+}
+catch(Exception ex)
+{
+}
+var msgBuilder = new StringBuilder();
+
+foreach (var tra in (from tr in ttRcvHead where tr.RowMod == "U" select tr))
+{
+  foreach(var rcv in (from r in Db.RcvDtl where r.Company == tra.Company && r.VendorNum == tra.VendorNum && r.PackSlip == tra.PackSlip  select r))
+  {
+    foreach (var rel in (from r in Db.PORel where r.Company == rcv.Company && r.PONum == rcv.PONum && r.POLine == rcv.POLine  && r.PORelNum == rcv.PORelNum select r))
+    {
+    if(rel.Urgent_c)
+    {
+      var line = (from r in Db.PODetail where r.Company == rel.Company && r.PONUM == rel.PONum && r.POLine == rel.POLine  select r).FirstOrDefault();
+      partNum = line.PartNum;
+      cmtText = line.CommentText;
+      msgBuilder.AppendLine("Urgent part " + partNum + " - " + cmtText);
+      string mes = "Urgent part " + partNum + " - " + cmtText;
+      //this.PublishInfoMessage(mes.ToString(), Ice.Common.BusinessObjectMessageType.Information, Ice.Bpm.InfoMessageDisplayMode.Individual, "Receipt", "Message");
+       }
+    }
+  }
+}
+if(msgBuilder.Length > 0)
+{
+this.PublishInfoMessage(msgBuilder.ToString(), Ice.Common.BusinessObjectMessageType.Information, Ice.Bpm.InfoMessageDisplayMode.Individual, "Receipt", "Message");
+}
+
+this.PublishInfoMessage(exp.JobNum_c, Ice.Common.BusinessObjectMessageType.Information, Ice.Bpm.InfoMessageDisplayMode.Individual, "Receipt", "Message");
+  var misc = (from m in Db.PurMisc where m.Company == exp.Company && m.MiscCode == exp.MiscCode select m).FirstOrDefault();
+  var mtl = (from m in Db.JobMtl where m.Company == exp.Company && m.JobNum == exp.JobNum_c && m.AssemblySeq == exp.Asm_c && m.MtlSeq == exp.MtlSeq_c select m).FirstOrDefault();
+   
+  if(misc != null && mtl == null)
+  {
+   
+    using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+    {
+      int asmSeq = 0;
+      string part = exp.MiscCode;
+      string desc = misc.Description;
+      var ds = Job.GetByID(exp.JobNum_c);
+      string mess = "";
+      Guid g = Guid.NewGuid();
+      Guid g = new Guid();
+      bool vSubAvail = false;
+      string vMsgType = "";
+      bool multipleMatch = false;
+      bool opPartChgCompleted = false;
+      string opMtlIssuedAction = "";
+      Job.GetNewJobMtl(ref ds, exp.JobNum_c, asmSeq);
+      Job.ChangeJobMtlPartNum(ref ds, true, ref part, g, "", "", out mess, out vSubAvail, out vMsgType, out multipleMatch, out opPartChgCompleted, out opMtlIssuedAction);
+      ds.JobMtl[ds.JobMtl.Count - 1]["Description"] = desc;
+      ds.JobMtl[ds.JobMtl.Count - 1]["MiscCharge"] = true;
+      ds.JobMtl[ds.JobMtl.Count - 1]["FixedQty"] = true;
+      ds.JobMtl[ds.JobMtl.Count - 1]["MiscCode"] = exp.MiscCode;
+      Job.Update(ref ds);
+    }
+   }
+
+
+using (System.Transactions.TransactionScope txScope = IceDataContext.CreateDefaultTransactionScope()) 
+{
+  foreach (var tra in (from tr in ttResults where tr.Calculated_Select == true select tr))
+  {
+    var insp = (from i in Db.ECOOprInsp where tra.ECOOprInsp_Company == i.Company && tra.ECOOprInsp_GroupID == i.GroupID && tra.ECOOprInsp_PartNum == i.PartNum && tra.ECOOprInsp_RevisionNum == i.RevisionNum && tra.ECOOprInsp_OprSeq == i.OprSeq && tra.ECOOprInsp_PlanSeq == i.PlanSeq select i).FirstOrDefault();
+    if (insp != null)
+    {
+      Db.ECOOprInsp.Delete(insp);
+      Db.Validate(insp);
+    }
+  }txScope.Complete();
+}
+// <auto-generated>
+// This code was generated by a tool. Any changes made manually will be lost
+// the next time this code is regenerated.
+// </auto-generated>
+
+string grp = GroupID.ToString();
+        bool morePages = false;
+        string whereClause = "GroupID = '{0}'", grp;
+        ARInv.GetList(whereClause, 0, 0, out morePages);
+        using (var updater = this.getDataUpdater("Erp", "EngWorkBench"))
+using (var updater = this.getDataUpdater("Erp", "EngWorkBench"))
+{
+    var ttResultQuery = ttResults
+        .Where(row => !string.IsNullOrEmpty(row.RowMod) && row.RowMod != "P");
+
+    foreach (var ttResult in ttResultQuery)
+    {
+        var ds = new Erp.Tablesets.UpdExtEngWorkBenchTableset();
+
+        // Query to object mapping
+        {
+            var ECOGroup = new Erp.Tablesets.ECOGroupRow
+            {
+                Company = ttResult.ECOGroup_Company,
+                GroupID = ttResult.ECOGroup_GroupID,
+            };
+
+            ds.ECOGroup.Add(ECOGroup);
+
+            var ECOOpr = new Erp.Tablesets.ECOOprRow
+            {
+                AltMethod = ttResult.ECOOpr_AltMethod,
+                Company = ttResult.ECOOpr_Company,
+                GroupID = ttResult.ECOOpr_GroupID,
+                OprSeq = ttResult.ECOOpr_OprSeq,
+                PartNum = ttResult.ECOOpr_PartNum,
+                RevisionNum = ttResult.ECOOpr_RevisionNum,
+            };
+
+            ds.ECOOpr.Add(ECOOpr);
+
+            var ECOOprInsp = new Erp.Tablesets.ECOOprInspRow
+            {
+                AltMethod = ttResult.ECOOprInsp_AltMethod,
+                Company = ttResult.ECOOprInsp_Company,
+                GroupID = ttResult.ECOOprInsp_GroupID,
+                InspPlanPartNum = ttResult.ECOOprInsp_InspPlanPartNum,
+                OprSeq = ttResult.ECOOprInsp_OprSeq,
+                OrigOprSeq = ttResult.ECOOprInsp_OrigOprSeq,
+                PartNum = ttResult.ECOOprInsp_PartNum,
+                PlanSeq = ttResult.ECOOprInsp_PlanSeq,
+                RevisionNum = ttResult.ECOOprInsp_RevisionNum,
+                SpecID = ttResult.ECOOprInsp_SpecID,
+            };
+
+            ds.ECOOprInsp.Add(ECOOprInsp);
+
+            var ECORev = new Erp.Tablesets.ECORevRow
+            {
+                AltMethod = ttResult.ECORev_AltMethod,
+                Approved = ttResult.ECORev_Approved,
+                Company = ttResult.ECORev_Company,
+                GroupID = ttResult.ECORev_GroupID,
+                PartNum = ttResult.ECORev_PartNum,
+                RevisionNum = ttResult.ECORev_RevisionNum,
+            };
+
+            ds.ECORev.Add(ECORev);
+        }
+
+        BOUpdErrorTableset boUpdateErrors = updater.Update(ref ds);
+        if (this.BpmDataFormIsPublished()) return;
+
+        ttResult.RowMod = "P";
+
+        // Object to query mapping
+        {
+            var ECOGroup = ds.ECOGroup.FirstOrDefault(
+                tableRow => tableRow.Company == ttResult.ECOGroup_Company
+                    && tableRow.GroupID == ttResult.ECOGroup_GroupID);
+            if (ECOGroup == null)
+            {
+                ECOGroup = ds.ECOGroup.LastOrDefault();
+            }
+
+            var ECOOpr = ds.ECOOpr.FirstOrDefault(
+                tableRow => tableRow.AltMethod == ttResult.ECOOpr_AltMethod
+                    && tableRow.Company == ttResult.ECOOpr_Company
+                    && tableRow.GroupID == ttResult.ECOOpr_GroupID
+                    && tableRow.OprSeq == ttResult.ECOOpr_OprSeq
+                    && tableRow.PartNum == ttResult.ECOOpr_PartNum
+                    && tableRow.RevisionNum == ttResult.ECOOpr_RevisionNum);
+            if (ECOOpr == null)
+            {
+                ECOOpr = ds.ECOOpr.LastOrDefault();
+            }
+
+            var ECOOprInsp = ds.ECOOprInsp.FirstOrDefault(
+                tableRow => tableRow.AltMethod == ttResult.ECOOprInsp_AltMethod
+                    && tableRow.Company == ttResult.ECOOprInsp_Company
+                    && tableRow.GroupID == ttResult.ECOOprInsp_GroupID
+                    && tableRow.OprSeq == ttResult.ECOOprInsp_OprSeq
+                    && tableRow.PartNum == ttResult.ECOOprInsp_PartNum
+                    && tableRow.PlanSeq == ttResult.ECOOprInsp_PlanSeq
+                    && tableRow.RevisionNum == ttResult.ECOOprInsp_RevisionNum);
+            if (ECOOprInsp == null)
+            {
+                ECOOprInsp = ds.ECOOprInsp.LastOrDefault();
+            }
+
+            var ECORev = ds.ECORev.FirstOrDefault(
+                tableRow => tableRow.AltMethod == ttResult.ECORev_AltMethod
+                    && tableRow.Company == ttResult.ECORev_Company
+                    && tableRow.GroupID == ttResult.ECORev_GroupID
+                    && tableRow.PartNum == ttResult.ECORev_PartNum
+                    && tableRow.RevisionNum == ttResult.ECORev_RevisionNum);
+            if (ECORev == null)
+            {
+                ECORev = ds.ECORev.LastOrDefault();
+            }
+
+            if (ECOGroup != null)
+            {
+                ttResult.ECOGroup_Company = ECOGroup.Company;
+                ttResult.ECOGroup_GroupID = ECOGroup.GroupID;
+            }
+
+            if (ECOOpr != null)
+            {
+                ttResult.ECOOpr_AltMethod = ECOOpr.AltMethod;
+                ttResult.ECOOpr_Company = ECOOpr.Company;
+                ttResult.ECOOpr_GroupID = ECOOpr.GroupID;
+                ttResult.ECOOpr_OprSeq = ECOOpr.OprSeq;
+                ttResult.ECOOpr_PartNum = ECOOpr.PartNum;
+                ttResult.ECOOpr_RevisionNum = ECOOpr.RevisionNum;
+            }
+
+            if (ECOOprInsp != null)
+            {
+                ttResult.ECOOprInsp_AltMethod = ECOOprInsp.AltMethod;
+                ttResult.ECOOprInsp_Company = ECOOprInsp.Company;
+                ttResult.ECOOprInsp_GroupID = ECOOprInsp.GroupID;
+                ttResult.ECOOprInsp_InspPlanPartNum = ECOOprInsp.InspPlanPartNum;
+                ttResult.ECOOprInsp_OprSeq = ECOOprInsp.OprSeq;
+                ttResult.ECOOprInsp_OrigOprSeq = ECOOprInsp.OrigOprSeq;
+                ttResult.ECOOprInsp_PartNum = ECOOprInsp.PartNum;
+                ttResult.ECOOprInsp_PlanSeq = ECOOprInsp.PlanSeq;
+                ttResult.ECOOprInsp_RevisionNum = ECOOprInsp.RevisionNum;
+                ttResult.ECOOprInsp_SpecID = ECOOprInsp.SpecID;
+            }
+
+            if (ECORev != null)
+            {
+                ttResult.ECORev_AltMethod = ECORev.AltMethod;
+                ttResult.ECORev_Approved = ECORev.Approved;
+                ttResult.ECORev_Company = ECORev.Company;
+                ttResult.ECORev_GroupID = ECORev.GroupID;
+                ttResult.ECORev_PartNum = ECORev.PartNum;
+                ttResult.ECORev_RevisionNum = ECORev.RevisionNum;
+            }
+        }
+
+        if (boUpdateErrors?.BOUpdError?.Count > 0)
+        {
+            ttErrors
+                .AddRange(
+                    boUpdateErrors.BOUpdError
+                        .Select(
+                            e => new ErrorsUbaqRow
+                            {
+                                TableName = e.TableName,
+                                ErrorRowIdent = ttResult.RowIdent,
+                                ErrorText = e.ErrorText,
+                                ErrorType = e.ErrorType
+                            }));
+        }
+    }
+}
+
+var ttResultsForDelete = ttResults
+    .Where(row => row.RowMod != "P")
+    .ToArray();
+
+foreach (var ttResult in ttResultsForDelete)
+{
+    ttResults.Remove(ttResult);
+}
+
+foreach (var ttResult in ttResults)
+{
+    ttResult.RowMod = "";
+}
+
+foreach (var hed in (from he in ttRcvHead select he))
+{
+  var rcv  = (from m in Db.RcvHead where m.Company == hed.Company && m.VendorNum == hed.VendorNum && m.PurPoint == hed.PurPoint && m.PackSlip == hed.PackSlip select m).FirstOrDefault();
+  if(rcv != null)
+  {
+    rcv.Received = true;
+    rcv.ReceiptComment = "Receipt from container 4004. 1";
+    Db.SaveChanges();
+  }
+}
+
+foreach (var hed in (from he in ttRcvHead select he))
+{
+  if(hed.Received && hed.ContainerID != 0)
+    {
+      using (var rcv = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.ReceiptSvcContract>(Db, true))
+      {
+         var dsReceipt = new Erp.Tablesets.ReceiptTableset();
+         dsReceipt.RcvHead[0]["Received"] = true;
+         dsReceipt.RcvHead[0]["ReceiptComment"] = "4004 Update";
+         rcv.Update(ref dsReceipt);
+        // var dsRcvDtl = new Erp.Tablesets.RcvDtlTableset();
+        string inCreateNewPoRels = "CREATE";
+        bool outEshReceived = false;
+        bool outPartialReceipt = false;
+        bool outReceiveAll = false;
+        rcv.ReceiveContainerUpdateUsingArriveDate(ref dsReceipt, hed.ContainerID, hed.ArrivedDate, inCreateNewPoRels, out outEshReceived, out outPartialReceipt, out outReceiveAll);
+      }
+   }
+}
+
+//Stop uncoded PO receipt
+Erp.Tables.TranGLC TranGLC;
+string vMessageID = string.Empty;
+
+foreach (var ttRcvDtl_xRow in (from ttRcvDtl_Row in ttRcvDtl
+  where ( ttRcvDtl_Row.Added() || ttRcvDtl_Row.Updated() )
+  select ttRcvDtl_Row))
+  if (ttRcvDtl_xRow != null)
+    { string po = Convert.ToString(ttRcvDtl_xRow.PONum);
+      string pol = Convert.ToString(ttRcvDtl_xRow.POLine);
+      string por = Convert.ToString(ttRcvDtl_xRow.PORelNum);
+      
+      var TGLC = (from tl in Db.TranGLC where tl.Company == ttRcvDtl_xRow.Company && tl.RelatedToFile == "PORel" && tl.Key1 == po 
+      && tl.Key2 == pol && tl.Key3 == por && tl.GLAccount == "4998|70|10" select tl).FirstOrDefault();
+      //foreach(var record in TGLC)
+        if (TGLC != null)
+        {
+          vMessageID = "Line " + pol + " is not coded so can not be receipted.";
+          CallContext.Current.ExceptionManager.AddBLException(vMessageID);
+        }
+    }
+    
+    foreach (var tra in (from tr in ttRcvDtl where tr.RowMod == "U"  select tr))
+{
+   foreach( var rcv in (from r in Db.RcvDtl where r.Company == tra.Company && r.PONum == tra.PONum && r.POLine == tra.POLine && r.PORelNum == tra.PORelNum select r))
+     {
+        if(tra.ReceivedComplete == true)
+        {
+          rcv.ReceivedComplete = true;
+        }
+        else {
+          rcv.ReceivedComplete = false;
+          
+        }
+        Db.SaveChanges();
+     }
+}
+
+
+foreach(var tec in (from te in ttFsTech where te.RowMod == "A" select te))
+{
+  var call = (from cal in Db.FSCallhd where cal.Company == tec.Company && cal.CallNum == tec.CallNum select cal).FirstOrDefault();
+  if (call != null)
+  {
+      var emp = (from em in Db.EmpBasic where em.Company == call.Company && em.EmpID == tec.EmpID select em).FirstOrDefault();
+      if (emp != null)
+      {
+        var res = (from re in Db.Resource where re.Company == call.Company && re.ResourceID == emp.ResourceID select re).FirstOrDefault();
+        if (res != null)
+        {
+          int lin2 = 0;
+          int lin3 = 0;
+          var dtl1 = (from dt1 in Db.FSCallDt where dt1.Company == call.Company && dt1.CallNum == call.CallNum && dt1.JobNum != "" select dt1).FirstOrDefault();
+          if (dtl1 != null)
+          {
+            lin2 = dtl1.CallLine;
+            var hed = (from he in Db.JobHead where he.Company == dtl1.Company && he.JobNum == dtl1.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (System.Transactions.TransactionScope txScope = IceDataContext.CreateDefaultTransactionScope()) {
+              foreach(var opr in (from op in Db.JobOper where op.Company == dtl1.Company && op.JobNum == dtl1.JobNum && op.AssemblySeq == 0 select op))
+              {
+                var odt = (from od in Db.JobOpDtl where od.Company == dtl1.Company && od.JobNum == dtl1.JobNum && od.AssemblySeq == 0 && od.OprSeq == opr.OprSeq && od.ResourceGrpID == emp.ResourceGrpID && od.ResourceID == "" select od).FirstOrDefault();
+                if (odt == null)
+                {
+                  using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+                  {
+                    /*string op = "SM";
+                    var ds = Job.GetByID(hed.JobNum);
+                    Job.GetNewJobOper(ref ds,hed.JobNum,0);
+                    string mess = "";
+                    Job.ChangeJobOperOpCode(op, out mess, ref ds);
+                    //ds.JobOper[ds.JobOper.Count - 1]["SchedComment"] = emp.ResourceGrpID+"~"+emp.ResourceID+"~"+res.Description;
+                    Job.Update(ref ds);*/
+                    var ds = Job.GetByID(hed.JobNum);
+                    Job.GetNewJobOpDtl(ref ds,hed.JobNum,0, opr.OprSeq);
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceGrpID"] = emp.ResourceGrpID;
+                    Job.ChangeJobOpDtlResourceGrpID(emp.ResourceGrpID, ref ds);
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceID"] = emp.ResourceID;
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["OpDtlDesc"] = res.Description;
+                    Job.Update(ref ds);
+                  }
+                }
+                else
+                {
+                  odt.ResourceID = emp.ResourceID.ToString();
+                  odt.OpDtlDesc = res.Description.ToString();
+                  Db.SaveChanges();        
+                }
+              }txScope.Complete();
+              }
+            }
+          }
+          var dtl2 = (from dt2 in Db.FSCallDt where dt2.Company == call.Company && dt2.CallNum == call.CallNum && dt2.JobNum != "" && dt2.CallLine != lin2 select dt2).FirstOrDefault();
+          if (dtl2 != null)
+          {
+            lin3 = dtl2.CallLine;
+            var hed = (from he in Db.JobHead where he.Company == dtl2.Company && he.JobNum == dtl2.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (System.Transactions.TransactionScope txScope = IceDataContext.CreateDefaultTransactionScope()) {
+              foreach(var opr in (from op in Db.JobOper where op.Company == dtl2.Company && op.JobNum == dtl2.JobNum && op.AssemblySeq == 0 select op))
+              {
+                var odt = (from od in Db.JobOpDtl where od.Company == dtl2.Company && od.JobNum == dtl2.JobNum && od.AssemblySeq == 0 && od.OprSeq == opr.OprSeq && od.ResourceGrpID == emp.ResourceGrpID && od.ResourceID == "" select od).FirstOrDefault();
+                if (odt == null)
+                {
+                  using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+                  {
+                    var ds = Job.GetByID(hed.JobNum);
+                    Job.GetNewJobOpDtl(ref ds,hed.JobNum,0, opr.OprSeq);
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceGrpID"] = emp.ResourceGrpID;
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceID"] = emp.ResourceID;
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["OpDtlDesc"] = res.Description;
+                    Job.Update(ref ds);
+                  }
+                }
+                else
+                {
+                  odt.ResourceID = emp.ResourceID.ToString();
+                  odt.OpDtlDesc = res.Description.ToString();
+                  Db.SaveChanges();        
+                }
+              }txScope.Complete();
+              }
+            }
+          }
+          var dtl3 = (from dt3 in Db.FSCallDt where dt3.Company == call.Company && dt3.CallNum == call.CallNum && dt3.JobNum != "" && dt3.CallLine != lin2 && dt3.CallLine != lin3 select dt3).FirstOrDefault();
+          if (dtl3 != null)
+          {
+            var hed = (from he in Db.JobHead where he.Company == dtl3.Company && he.JobNum == dtl3.JobNum select he).FirstOrDefault();
+            if (hed != null)
+            {
+              using (System.Transactions.TransactionScope txScope = IceDataContext.CreateDefaultTransactionScope()) {
+              foreach(var opr in (from op in Db.JobOper where op.Company == dtl3.Company && op.JobNum == dtl3.JobNum && op.AssemblySeq == 0 select op))
+              {
+                var odt = (from od in Db.JobOpDtl where od.Company == dtl3.Company && od.JobNum == dtl3.JobNum && od.AssemblySeq == 0 && od.OprSeq == opr.OprSeq && od.ResourceGrpID == emp.ResourceGrpID && od.ResourceID == "" select od).FirstOrDefault();
+                if (odt == null)
+                {
+                  using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.JobEntrySvcContract>(Db, true))
+                  {
+                    var ds = Job.GetByID(hed.JobNum);
+                    Job.GetNewJobOpDtl(ref ds,hed.JobNum,0, opr.OprSeq);
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceGrpID"] = emp.ResourceGrpID;
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["ResourceID"] = emp.ResourceID;
+                    ds.JobOpDtl[ds.JobOpDtl.Count - 1]["OpDtlDesc"] = res.Description;
+                    Job.Update(ref ds);
+                  }
+                }
+                else
+                {
+                  odt.ResourceID = emp.ResourceID.ToString();
+                  odt.OpDtlDesc = res.Description.ToString();
+                  Db.SaveChanges();        
+                }
+              }txScope.Complete();
+              }
+            }
+          }
+        }
+      }  
+  } 
+}
+foreach(var ttUn in (from t in ttIssueReturn where t.RowMod == "A" select t))
+{
+  var pcid = (from p in Db.PkgControlHeader where p.PCID == ttUn.FromPCID select p).FirstOrDefault();
+  if (pcid != null)
+  {
+    this.PublishInfoMessage(callContextBpmData.Number01.ToString(), Ice.Common.BusinessObjectMessageType.Information, Ice.Bpm.InfoMessageDisplayMode.Individual, "Unpick", "Info");
+    using (var Job = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.PkgControlIDBuildSplitMergeSvcContract>(Db, true))
+    {
+      bool getPCIDContents = true;
+      var sourceDS = new Erp.Tablesets.PCIDBuildSplitMergeSourceTableset();
+      Job.OnChangeSourcePCID(ttUn.FromPCID, getPCIDContents, ref sourceDS);
+      
+      
+      string destPCID = "PG68";
+      var destDS = new Erp.Tablesets.PCIDBuildSplitMergeDestTableset();
+      Job.OnChangeDestPCID(destPCID, getPCIDContents, ref destDS);
+      Job.AddPCIDToPCID(ref sourceDS, ref destDS);
+    }
+  }
+}
+
+foreach(var ttUn in (from t in ttUnpickTransaction where t.RowMod == "A" select t))
+{
+  var pcidDest = (from p in Db.PkgControlHeader where p.PCID == ttUn.PCID select p).FirstOrDefault();
+  if (pcidDest != null)
+  {
+    pcidDest.CustNum = ttUn.CustNum;
+    pcidDest.ShipToCountryNum = ttUn.ShipToCountryNum;
+    pcidDest.ShipToNum = ttUn.ShipToNum;
+    pcidDest.ShipToName = ttUn.ShipToName;
+    pcidDest.ShipToAddress1 = ttUn.ShipToAddress1;
+    pcidDest.ShipToAddress2 = ttUn.ShipToAddress2;
+    pcidDest.ShipToAddress3 = ttUn.ShipToAddress3;
+    pcidDest.ShipToCity = ttUn.ShipToCity;
+    pcidDest.ShipToCountryDesc = ttUn.ShipToCountryDesc;
+    pcidDest.ShipToDock = ttUn.ShipToDock;
+  }
+}
+
+foreach(var req in (from re in ttReqDetail where re.RowMod == "D" select re))
+{
+  using (var ud17 = Ice.Assemblies.ServiceRenderer.GetService<Ice.Contracts.UD17SvcContract>(Db, true))
+  {
+    var ds = new Ice.Tablesets.UD17Tableset();
+    ud17.GetaNewUD17(ref ds);
+    ds.UD17[0]["Key1"] = DateTime.Now.ToString("yyyyMMddHHmmss.s");
+    ds.UD17[0]["Key2"] = "ReqDetail";
+    ds.UD17[0]["Number01"] = Convert.ToDecimal(req.ReqNum);
+    ds.UD17[0]["Number02"] = Convert.ToDecimal(req.ReqLine);
+    ds.UD17[0]["Date01"] = Convert.ToDateTime(DateTime.Now);
+    ds.UD17[0]["ShortChar01"] = callContextClient.CurrentUserId.ToString();
+    ud17.Update(ref ds);
+  }
+}
+
+foreach (var tra in (from t in ttTask where t.RelatedToFile == "QuoteHed" select t))
+{
+  using (var Ser = Ice.Assemblies.ServiceRenderer.GetService<Erp.Contracts.ServiceCallCenterSvcContract>(Db, true))
+  {
+    var ds = new Erp.Tablesets.ServiceCallCenterTableset();
+    Ser.GetNewFSCallhd(ref ds);
+    Ser.ChangeHdrCustID(tra.CustID, ref ds);
+    Ser.ChangeHdrShipToCustID(tra.TaskShipToCustID, ref ds);
+    Ser.ChangeHdrShipToNum(tra.TaskShipToNum, ref ds);
+    DateTime today = DateTime.Now;
+    int requestDateTime = tra.ChangeTime;
+    Ser.ChangeHdrRequestTime(requestDateTime, ref ds);
+    ds.FSCallhd[0]["CallCode"] = "N";
+    Ser.Update(ref ds);
+    foreach(var dtl in (from h in Db.QuoteDtl where h.Company == tra.Company && h.QuoteNum == tra.TaskQuoteNum select h))
+    {
+      var hdCase = (from c in Db.HDCase where c.Company == tra.Company && c.QuoteNum == tra.TaskQuoteNum select c).FirstOrDefault();
+      if(hdCase != null )
+      {
+        string partNum = dtl.PartNum;
+        int callNum = Convert.ToInt32( ds.FSCallhd[0]["CallNum"]);
+        Ser.GetNewFSCallDt(ref ds, callNum);
+        Ser.ChangeDtlPartNum(ref ds, partNum);
+        ds.FSCallDt[0]["LineDesc"] = dtl.LineDesc;
+        ds.FSCallDt[0]["PartNum"] = partNum;
+        ds.FSCallDt[0]["IUM"] = dtl.SellingExpectedUM;
+        ds.FSCallDt[0]["PartDescription"] = hdCase.Description;
+        ds.FSCallDt[0]["IssueTopicID1"] = hdCase.TopicID1;
+        Ser.Update(ref ds);
+      }  
+    }
+  }
+}
